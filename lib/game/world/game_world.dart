@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:demo/game/sprites/player_character.dart';
+import 'package:demo/game/sprites/item.dart';
 
 class GameWorld extends World {
   late Player player;
@@ -10,7 +11,9 @@ class GameWorld extends World {
   FutureOr<void> onLoad() {
     super.onLoad();
 
-    add(RectangleComponent(size: Vector2(50, 50)));
+    for (int i = 0; i < 10; i++) {
+      add(Item(position: Vector2.random() * 64.0, size: Vector2(48, 48)));
+    }
 
     player = Player();
     add(player);

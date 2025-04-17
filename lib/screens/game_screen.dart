@@ -1,4 +1,3 @@
-import 'package:demo/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import 'package:demo/game/burger_game.dart';
