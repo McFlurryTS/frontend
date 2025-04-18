@@ -1,11 +1,32 @@
-import 'package:demo/providers/recipes_provider.dart';
-import 'package:demo/screens/game_screen.dart';
-import 'package:demo/screens/home_screen.dart';
+import 'package:McDonalds/models/product_model.dart';
+import 'package:McDonalds/providers/categories_provider.dart';
+import 'package:McDonalds/screens/category_screen.dart';
+import 'package:McDonalds/screens/menu_screen.dart';
+import 'package:McDonalds/screens/product_detail_screen.dart';
+import 'package:McDonalds/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:provider/provider.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:McDonalds/providers/products_provider.dart';
+import 'package:McDonalds/screens/home_screen.dart';
+import 'package:McDonalds/screens/game_screen.dart';
+import 'package:McDonalds/screens/demo_screen.dart';
+import 'package:McDonalds/utils/rocket_theme.dart';
+import 'package:McDonalds/providers/cart_provider.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CategoriesProvider()),
+        ChangeNotifierProvider(create: (_) => ProductsProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -13,97 +34,194 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => RecipesProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProductsProvider()),
+        ChangeNotifierProvider(create: (_) => CategoriesProvider()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Rocket demo',
-        home: const RecipeBook(),
+        title: 'McDonald\'s App',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: RocketColors.primary,
+            brightness: Brightness.light,
+          ),
+          scaffoldBackgroundColor: RocketColors.background,
+          appBarTheme: AppBarTheme(
+            backgroundColor: RocketColors.secondary,
+            titleTextStyle: RocketTextStyles.headline2.copyWith(
+              color: Colors.white,
+            ),
+          ),
+        ),
+        home: const MainApp(),
+        onGenerateRoute: (settings) {
+          if (settings.name == '/search') {
+            return MaterialPageRoute(builder: (_) => const SearchScreen());
+          } else if (settings.name == '/menu') {
+            return MaterialPageRoute(builder: (_) => const MenuScreen());
+          } else if (settings.name == '/category') {
+            final args = settings.arguments as Map<String, String>;
+            return MaterialPageRoute(
+              builder:
+                  (_) => CategoryScreen(
+                    categoryId: args['id']!,
+                    endpoint: args['endpoint']!,
+                  ),
+            );
+          } else if (settings.name == '/product_detail') {
+            final product = settings.arguments as Product;
+            return MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(product: product),
+            );
+          }
+          return null;
+        },
       ),
     );
   }
 }
 
-class RecipeBook extends StatefulWidget {
-  const RecipeBook({super.key});
+class MainApp extends StatefulWidget {
+  const MainApp({super.key});
 
   @override
-  _RocketUiState createState() => _RocketUiState();
+  State<MainApp> createState() => _MainAppState();
 }
 
-class _RocketUiState extends State<RecipeBook>
-    with SingleTickerProviderStateMixin {
+class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(
-    0,
-  ); // Notificador para el índice actual
+  final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(0);
+  late List<Widget> _screens;
+  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(true);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
-    _tabController.addListener(() {
-      if (_tabController.index != _currentIndexNotifier.value) {
-        _currentIndexNotifier.value =
-            _tabController.index; // Sincroniza el índice actual
-      }
+    _tabController = TabController(length: 6, vsync: this);
+    _tabController.addListener(_handleTabChange);
+
+    _screens = [
+      const HomeScreen(),
+      const Center(child: Text('Formulario IA')),
+      GameScreen(
+        tabController: _tabController,
+        currentIndexNotifier: _currentIndexNotifier,
+      ),
+      const Center(child: Text('Pedidos')),
+      const Center(child: Text('Mi Cuenta')),
+      const DemoScreen(),
+    ];
+
+    _simulateInitialLoad();
+  }
+
+  void _handleTabChange() {
+    if (_tabController.index != _currentIndexNotifier.value) {
+      _currentIndexNotifier.value = _tabController.index;
+      _isLoading.value = true;
+      Future.delayed(const Duration(seconds: 1), () {
+        _isLoading.value = false;
+      });
+    }
+  }
+
+  void _simulateInitialLoad() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _isLoading.value = false;
     });
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
-    _currentIndexNotifier.dispose(); // Libera el notificador
+    _currentIndexNotifier.dispose();
+    _isLoading.dispose();
     super.dispose();
+  }
+
+  Widget _buildNavIcon(int currentIndex, int index, IconData icon) {
+    return Icon(
+      icon,
+      size: 30,
+      color: currentIndex == index ? Colors.white : RocketColors.offIcons,
+    );
+  }
+
+  Widget _buildSkeletonizedContent(Widget screen) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isLoading,
+      builder: (context, isLoading, child) {
+        return Skeletonizer(
+          enabled: isLoading,
+          containersColor: Colors.grey[300],
+          effect: ShimmerEffect(
+            baseColor: Colors.grey[400]!,
+            highlightColor: Colors.grey[200]!,
+          ),
+          child: screen,
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5, // Número de pestañas
+      length: 6,
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.orange,
-          title: Text('Rocket UI', style: TextStyle(color: Colors.white)),
-          centerTitle: true,
-        ),
+        appBar: AppBar(title: const Text('McDonald\'s'), centerTitle: true),
         bottomNavigationBar: ValueListenableBuilder<int>(
           valueListenable: _currentIndexNotifier,
           builder: (context, currentIndex, child) {
             return CurvedNavigationBar(
-              animationDuration: Duration(milliseconds: 500),
-              backgroundColor: Colors.white,
-              color: Colors.orange,
-              buttonBackgroundColor: Colors.orange,
-              height: 60,
+              key: const ValueKey('curved_navigation_bar'),
+              animationCurve: Curves.easeOutCirc,
+              animationDuration: const Duration(milliseconds: 500),
+              backgroundColor: Colors.transparent,
+              color: RocketColors.backgroundBar,
+              buttonBackgroundColor: RocketColors.secondary,
+              height: 70,
               index: currentIndex,
               items: <Widget>[
-                Icon(Icons.home, size: 30, color: Colors.white),
-                Icon(Icons.auto_fix_normal, size: 30, color: Colors.white),
-                Icon(Icons.gamepad, size: 30, color: Colors.white),
-                Icon(Icons.delivery_dining, size: 30, color: Colors.white),
-                Icon(Icons.person, size: 30, color: Colors.white),
+                _buildNavIcon(currentIndex, 0, Icons.home),
+                _buildNavIcon(currentIndex, 1, Icons.auto_fix_high),
+                _buildNavIcon(currentIndex, 2, Icons.gamepad),
+                _buildNavIcon(currentIndex, 3, Icons.shopping_bag),
+                _buildNavIcon(currentIndex, 4, Icons.person),
+                _buildNavIcon(currentIndex, 5, Icons.settings),
               ],
               onTap: (index) {
-                _tabController.index = index; // Cambia directamente el índice
-                _currentIndexNotifier.value =
-                    index; // Actualiza el índice actual
+                _tabController.index = index;
+                _currentIndexNotifier.value = index;
               },
             );
           },
         ),
-        body: TabBarView(
-          controller: _tabController,
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-            HomeScreen(),
-            Center(child: Text('Formulario IA')),
-            GameScreen(
-              tabController: _tabController,
-              currentIndexNotifier: _currentIndexNotifier,
-            ), // Pasa el notificador
-            Center(child: Text('Pedidos')),
-            Center(child: Text('Mis Cuenta')),
-          ],
+        body: ValueListenableBuilder<int>(
+          valueListenable: _currentIndexNotifier,
+          builder: (context, currentIndex, _) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.easeOut,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: IndexedStack(
+                key: ValueKey<int>(currentIndex),
+                index: currentIndex,
+                children:
+                    _screens.map((screen) {
+                      return KeyedSubtree(
+                        key: ValueKey(screen.hashCode),
+                        child: _buildSkeletonizedContent(screen),
+                      );
+                    }).toList(),
+              ),
+            );
+          },
         ),
       ),
     );

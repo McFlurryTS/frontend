@@ -1,347 +1,263 @@
-import 'package:demo/providers/recipes_provider.dart';
-import 'package:demo/screens/recipe_detail.dart';
+import 'package:McDonalds/models/category_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:McDonalds/providers/categories_provider.dart';
+import 'package:McDonalds/widgets/category_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final recipesProvider = Provider.of<RecipesProvider>(
-      context,
-      listen: false,
-    );
-    recipesProvider.fetchRecipes();
+    final categoriesProvider = Provider.of<CategoriesProvider>(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (categoriesProvider.categories.isEmpty &&
+          !categoriesProvider.isLoading) {
+        categoriesProvider.fetchCategories();
+      }
+    });
+
     return Scaffold(
-      body: Consumer<RecipesProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (provider.recipes.isEmpty) {
-            return const Center(child: Text('No recipes found'));
-          } else {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16), // Espaciado entre filas
-                SizedBox(
-                  height: 120, // Altura de la fila de tarjetas
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal, // Desliza horizontalmente
-                    itemCount: provider.recipes.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      backgroundColor: Colors.grey[100],
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            snap: false,
+            pinned: false, // <- este es el cambio clave
+            backgroundColor: const Color(0xFFDA291C),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFDA291C), Color(0xFFED1C24)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: 25,
+                    right: 25,
+                    bottom: 25,
+                    top: 10,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
                         child: Column(
-                          children: [
-                            ClipOval(
-                              child: Image.network(
-                                provider.recipes[index].image_link,
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 80,
-                                    height: 80,
-                                    color: Colors.grey[200],
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey[400],
-                                      size: 40,
-                                    ),
-                                  );
-                                },
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Welcome Back, Fernanda! 👋',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Sección',
-                              style: TextStyle(fontSize: 14),
+                            SizedBox(height: 5),
+                            Text(
+                              'OBTEN UN DESCUENTO EN LO QUE MAS TE GUSTA!',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white24,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Foto',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16), // Espaciado entre filas
-                Text(
-                  '  Cupones',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  height: 160, // Altura de la fila de tarjetas
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal, // Desliza horizontalmente
-                    itemCount: provider.recipes.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: _RecipesCard(context, provider.recipes[index]),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16), // Espaciado entre filas
-                Text(
-                  '  Menus',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  height: 120, // Altura de la fila de tarjetas
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal, // Desliza horizontalmente
-                    itemCount: provider.recipes.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: _RecipesCard(context, provider.recipes[index]),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16), // Espaciado entre filas
-                Text(
-                  '  Mas secciones quí',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                // Agrega más widgets o filas aquí según sea necesario
-              ],
-            );
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.orange,
-        child: Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          _showButtom(context);
-        },
-      ),
-    );
-  }
-
-  Future<void> _showButtom(BuildContext context) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder:
-          (context) => GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                height: 650,
-                width: MediaQuery.of(context).size.width,
-                child: const ReciperForm(),
               ),
             ),
           ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _buildCustomMasonryGrid(context, categoriesProvider),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _RecipesCard(BuildContext context, dynamic recipe) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) =>
-                    RecipeDetail(recipe: recipe), // Envía el modelo completo
+  Widget _buildCustomMasonryGrid(
+    BuildContext context,
+    CategoriesProvider provider,
+  ) {
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.error != null) {
+      return Center(
+        child: Text(provider.error!, style: const TextStyle(color: Colors.red)),
+      );
+    }
+
+    final categories = provider.categories;
+
+    final List<Widget> leftColumn = [];
+    final List<Widget> rightColumn = [];
+
+    for (int i = 0; i < categories.length; i++) {
+      final card = _buildCategoryCard(context, categories[i]);
+      if (leftColumn.length == 0) {
+        leftColumn.add(
+          _buildFakeCard(
+            icon: Icons.search,
+            text: 'Buscar...',
+            height: 80,
+            routeName: '/search',
+            context: context,
           ),
         );
-      },
-      child: Container(
-        width: 300, // Ancho de la tarjeta
-        height: 100, // Alto de la tarjeta
-        child: Card(
-          child: Row(
-            children: <Widget>[
-              Container(
-                height: 90, // Alto de la imagen
-                width: 90, // Ancho de la imagen
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    recipe.image_link,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[200], // Fondo de reserva
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.grey[400],
-                          size: 50,
-                        ), // Icono de marcador de posición
-                      );
-                    },
-                  ),
-                ),
+      }
+      if (rightColumn.length == 2) {
+        rightColumn.add(
+          _buildFakeCard(
+            icon: Icons.menu,
+            text: 'Menú',
+            height: 80,
+            routeName: '/menu',
+            context: context,
+          ),
+        );
+      }
+      if (leftColumn.length <= rightColumn.length) {
+        leftColumn.add(card);
+      } else {
+        rightColumn.add(card);
+      }
+    }
+
+    return Column(
+      children: [
+        Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(25),
+            child: Container(
+              color: Colors.grey[200],
+              width: double.infinity,
+              child: Image.network(
+                'https://scontent.fgdl16-1.fna.fbcdn.net/v/t39.30808-6/487507136_1063725395792790_914230062381694866_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=86c6b0&_nc_ohc=DKE6j9UjwyoQ7kNvwGiuSUt&_nc_oc=AdncQE9Zv6Jc00nVvUqVzSnQUgi6DNcgC8W8PwwU6QrFuJEoina-ld2UzhDLfJNReOAR-F-XKGe7qVUeFPIXdu0g&_nc_zt=23&_nc_ht=scontent.fgdl16-1.fna&_nc_gid=BxK3shrMoOVPulJxNtS3lg&oh=00_AfH_i_NNfjslykzMK62SPHRA0o9j1lPnppZZo5qzBl3sJA&oe=680620B5',
+                fit: BoxFit.cover,
               ),
-              const SizedBox(width: 16), // Espaciado entre la imagen y el texto
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    recipe.name,
-                    style: TextStyle(fontSize: 16, fontFamily: 'Quicksand'),
-                    overflow: TextOverflow.ellipsis, // Maneja texto largo
-                  ),
-                  const SizedBox(height: 4),
-                  Container(height: 2, width: 75, color: Colors.orange),
-                  Text(
-                    'By ${recipe.author}',
-                    style: TextStyle(fontSize: 16, fontFamily: 'Quicksand'),
-                    overflow: TextOverflow.ellipsis, // Maneja texto largo
-                  ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  for (final w in leftColumn) ...[
+                    w,
+                    const SizedBox(height: 20),
+                  ],
                 ],
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                children: [
+                  for (final w in rightColumn) ...[
+                    w,
+                    const SizedBox(height: 20),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryCard(BuildContext context, MenuCategory category) {
+    return CategoryCard(
+      category: category,
+      onTap: () {
+        Navigator.pushNamed(context, '/category', arguments: category.id);
+      },
+    );
+  }
+
+  Widget _buildFakeCard({
+    required IconData icon,
+    required String text,
+    required double height,
+    String? routeName,
+    required BuildContext context,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (routeName != null) {
+          Navigator.pushNamed(context, routeName);
+        }
+      },
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(color: Colors.grey[200]!, width: 0),
+        ),
+        child: Container(
+          height: height,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            gradient: const LinearGradient(
+              colors: [Color(0xFFfceaa2), Color(0xFFfcc29c)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.grey[600], size: 26),
+              const SizedBox(width: 12),
+              Text(
+                text,
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class ReciperForm extends StatelessWidget {
-  const ReciperForm({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-
-    final TextEditingController _recipeName = TextEditingController();
-    final TextEditingController _recipeAuthor = TextEditingController();
-    final TextEditingController _recipeImage = TextEditingController();
-    final TextEditingController _recipeIngredients = TextEditingController();
-    final TextEditingController _recipeSteps = TextEditingController();
-
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Add New Recipe',
-              style: TextStyle(fontSize: 24, color: Colors.orange),
-            ),
-            SizedBox(height: 16),
-            _buildTextField(
-              controller: _recipeName,
-              label: 'Recipe Name',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a recipe name';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            _buildTextField(
-              maxLines: 1,
-              controller: _recipeAuthor,
-              label: 'Author Recipe',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a author recipe';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            _buildTextField(
-              controller: _recipeImage,
-              label: 'Image URL',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a image url';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            _buildTextField(
-              maxLines: 1,
-              controller: _recipeIngredients,
-              label: 'Recipe Ingredients',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a recipe ingredients';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            _buildTextField(
-              maxLines: 4,
-              controller: _recipeSteps,
-              label: 'Recipe Steps',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a recipe steps';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    Navigator.pop(context);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  'Save Recipe',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    required String? Function(String?) validator,
-    int maxLines = 1,
-  }) {
-    return TextFormField(
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.orange, fontFamily: 'Quicksand'),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.orange, width: 1),
-        ),
-      ),
-      validator: validator,
-      maxLines: maxLines,
     );
   }
 }
