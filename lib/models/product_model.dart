@@ -1,105 +1,78 @@
-class Product {
+import 'package:hive/hive.dart';
+
+part 'product_model.g.dart';
+
+@HiveType(typeId: 0)
+class Product extends HiveObject {
+  @HiveField(0)
   final String id;
-  final String categoryId;
+
+  @HiveField(1)
+  final String category;
+
+  @HiveField(2)
   final String name;
+
+  @HiveField(3)
   final String description;
-  final String? weight;
-  final String? calories;
-  final String? caloriesPercentage;
-  final String? proteins;
-  final String? proteinsPercentage;
-  final String? carbohydrates;
-  final String? carbohydratesPercentage;
-  final String? lipids;
-  final String? lipidsPercentage;
-  final String? sodium;
-  final String? sodiumPercentage;
-  final String? fiber;
-  final String? fiberPercentage;
-  final String? saturatedFats;
-  final String? saturatedFatsPercentage;
-  final String? transFats;
-  final String? transFatsPercentage;
-  final String? sugarTotals;
+
+  @HiveField(4)
   final String image;
+
+  @HiveField(5)
+  final String url;
+
+  @HiveField(6)
   final String country;
-  final bool hideExtraInfo;
-  final String urlPdf;
+
+  @HiveField(7)
   final bool active;
-  final List<String> allergens;
+
+  @HiveField(8)
   final DateTime updatedAt;
-  final double price; // Agregar precio base
+
+  @HiveField(9)
+  final double price;
+
+  @HiveField(10)
+  final List<String> allergens;
 
   Product({
     required this.id,
-    required this.categoryId,
+    required this.category,
     required this.name,
     required this.description,
-    this.weight,
-    this.calories,
-    this.caloriesPercentage,
-    this.proteins,
-    this.proteinsPercentage,
-    this.carbohydrates,
-    this.carbohydratesPercentage,
-    this.lipids,
-    this.lipidsPercentage,
-    this.sodium,
-    this.sodiumPercentage,
-    this.fiber,
-    this.fiberPercentage,
-    this.saturatedFats,
-    this.saturatedFatsPercentage,
-    this.transFats,
-    this.transFatsPercentage,
-    this.sugarTotals,
     required this.image,
+    required this.url,
     required this.country,
-    required this.hideExtraInfo,
-    required this.urlPdf,
     required this.active,
-    required this.allergens,
     required this.updatedAt,
     required this.price,
+    this.allergens = const [],
   });
+
+  bool get hasAllergens => allergens != null;
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] as String,
-      categoryId: json['category'] as String,
+      category: json['category'] as String,
       name: json['name'] as String,
-      description: json['description'] as String,
-      weight: json['weight']?.toString(),
-      calories: json['calories']?.toString(),
-      caloriesPercentage: json['caloriesPercentage']?.toString(),
-      proteins: json['proteins']?.toString(),
-      proteinsPercentage: json['proteinsPercentage']?.toString(),
-      carbohydrates: json['carbohydrates']?.toString(),
-      carbohydratesPercentage: json['carbohydratesPercentage']?.toString(),
-      lipids: json['lipids']?.toString(),
-      lipidsPercentage: json['lipidsPercentage']?.toString(),
-      sodium: json['sodium']?.toString(),
-      sodiumPercentage: json['sodiumPercentage']?.toString(),
-      fiber: json['fiber']?.toString(),
-      fiberPercentage: json['fiberPercentage']?.toString(),
-      saturatedFats: json['saturatedFats']?.toString(),
-      saturatedFatsPercentage: json['saturatedFatsPercentage']?.toString(),
-      transFats: json['transFats']?.toString(),
-      transFatsPercentage: json['transFatsPercentage']?.toString(),
-      sugarTotals: json['sugarTotals']?.toString(),
-      image: json['image'] as String,
-      country: json['country'] as String,
-      hideExtraInfo: json['hideExtraInfo'] as bool,
-      urlPdf: json['urlPdf'] as String,
-      active: json['active'] as bool,
-      allergens: List<String>.from(json['allergens'] ?? []),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      description: json['description'] ?? '',
+      image: json['image'] ?? '',
+      url: json['url'] ?? '',
+      country: json['country'] ?? 'MX',
+      active: json['active'] ?? true,
+      updatedAt: DateTime.parse(json['updatedAt']),
       price:
-          json['price'] != null
-              ? (json['price'] as num).toDouble()
-              : json['price_base'] != null
-              ? (json['price_base'] as num).toDouble()
-              : 155.0, // Precio por defecto
+          double.tryParse(
+            json['price'].toString().replaceAll('\$', '').trim(),
+          ) ??
+          0.0,
+      allergens:
+          json['allergens'] != null
+              ? List<String>.from(json['allergens'])
+              : const [],
     );
   }
 }

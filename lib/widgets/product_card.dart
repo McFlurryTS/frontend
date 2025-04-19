@@ -3,35 +3,58 @@ import 'package:flutter/material.dart';
 import 'package:McDonalds/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:McDonalds/widgets/optimized_image.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   final Product product;
   final VoidCallback onTap;
 
   const ProductCard({super.key, required this.product, required this.onTap});
+
+  @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard>
+    with SingleTickerProviderStateMixin {
+  final bool _showLoading = true;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
 
   Widget _buildProductImage(String imageUrl) {
     return Container(
       width: 110,
       height: 90,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Skeletonizer(
-            enabled: true,
-            containersColor: Colors.grey[300],
-            effect: ShimmerEffect(
-              baseColor: Colors.grey[400]!,
-              highlightColor: Colors.grey[200]!,
-            ),
-            child: Container(color: Colors.white),
-          );
-        },
-        errorBuilder: (_, __, ___) => const Icon(Icons.fastfood, size: 40),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: OptimizedImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          placeholder: Container(color: Colors.grey[200]),
+          errorWidget:
+              (_, __) => Center(
+                child: Icon(Icons.fastfood, size: 40, color: Colors.grey[400]),
+              ),
+        ),
       ),
     );
   }
@@ -39,7 +62,7 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Column(
         children: [
           SizedBox(
@@ -49,7 +72,7 @@ class ProductCard extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(4),
-                  child: _buildProductImage(product.image),
+                  child: _buildProductImage(widget.product.image),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -58,7 +81,7 @@ class ProductCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product.name,
+                        widget.product.name,
                         style: RocketTextStyles.headline2.copyWith(
                           fontFamily: GoogleFonts.poppins().fontFamily,
                           fontSize: 14,
@@ -70,7 +93,7 @@ class ProductCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Desde \$${product.price.toStringAsFixed(0)}',
+                        'Desde \$${widget.product.price.toStringAsFixed(0)}',
                         style: RocketTextStyles.body.copyWith(
                           fontFamily: GoogleFonts.roboto().fontFamily,
                           fontSize: 14,

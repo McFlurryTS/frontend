@@ -1,13 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:McDonalds/models/category_model.dart';
-import 'package:McDonalds/models/product_model.dart';
+import 'package:McDonalds/providers/products_provider.dart';
 
 class CategoriesProvider with ChangeNotifier {
-  final String baseUrl = 'http://192.168.1.71:3000';
-  List<MenuCategory> _categories = [];
+  final List<MenuCategory> _categories = [];
   bool _isLoading = false;
   String? _error;
 
@@ -15,75 +11,55 @@ class CategoriesProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Definición estática de categorías disponibles
+  // Categorías desde el JSON
   static const List<Map<String, String>> categoryDefinitions = [
-    {'id': 'desayunos', 'name': 'Desayunos', 'endpoint': 'desayunos'},
-    {'id': 'hamburguesas', 'name': 'Hamburguesas', 'endpoint': 'hamburguesas'},
-    {'id': 'pollo', 'name': 'Pollo', 'endpoint': 'pollo'},
-    {'id': 'postres', 'name': 'Postres', 'endpoint': 'postres'},
-    {
-      'id': 'acompanamientos',
-      'name': 'Complementos',
-      'endpoint': 'acompanamientos',
-    },
-    {'id': 'bebidas', 'name': 'Bebidas', 'endpoint': 'bebidas'},
+    {'id': 'DESAYUNOS', 'name': 'Desayunos'},
+    {'id': 'A_LA_CARTA_PAPAS', 'name': 'Papas a la carta'},
+    {'id': 'A_LA_CARTA_HAMBURGUESAS', 'name': 'Hamburguesas a la carta'},
+    {'id': 'A_LA_CARTA_NUGGETS', 'name': 'Nuggets a la carta'},
+    {'id': 'PROMOCIONES', 'name': 'Promociones'},
+    {'id': 'BEBIDAS', 'name': 'Bebidas'},
+    {'id': 'TU_FAV_99', 'name': 'Tu Fav x \$99'},
+    {'id': 'FAMILY_BOX', 'name': 'Family Box'},
+    {'id': 'POSTRES_Y_MALTEADAS', 'name': 'Postres y Malteadas'},
+    {'id': 'CAJITA_FELIZ', 'name': 'Cajita Feliz'},
+    {'id': 'EXCLUSIVO_PICKUP', 'name': 'Exclusivo Pickup'},
+    {'id': 'MCTRIOS_MEDIANOS', 'name': 'McTríos Medianos'},
+    {'id': 'MCTRIOS_GRANDES', 'name': 'McTríos Grandes'},
+    {'id': 'MCTRIO_3X3', 'name': 'McTrío 3x3'},
   ];
 
-  Future<void> fetchCategories() async {
+  Future<void> generateCategoriesFromProducts(
+    ProductsProvider productsProvider,
+  ) async {
     _isLoading = true;
     _error = null;
+    _categories.clear();
     notifyListeners();
 
     try {
-      _categories = [];
+      final List<MenuCategory> newCategories = [];
 
-      for (final catDef in categoryDefinitions) {
-        final response = await http.get(
-          Uri.parse('$baseUrl/${catDef['endpoint']}'),
-          headers: {'Accept': 'application/json'},
-        );
+      for (final def in categoryDefinitions) {
+        final id = def['id']!;
+        final name = def['name']!;
+        final products = productsProvider.getProductsByCategory(id);
 
-        if (response.statusCode == 200) {
-          final List<dynamic> responseData = json.decode(response.body);
-          if (responseData.isNotEmpty) {
-            // Parsear el primer producto para obtener la imagen
-            final firstProduct = Product.fromJson(responseData.first);
-
-            _categories.add(
-              MenuCategory(
-                id: catDef['id']!,
-                name: catDef['name']!,
-                imageUrl: firstProduct.image,
-                endpoint: catDef['endpoint']!,
-              ),
-            );
-          }
-        } else {
-          throw Exception(
-            'Error al cargar ${catDef['name']}: ${response.statusCode}',
+        if (products.isNotEmpty) {
+          final imageUrl = products.first.image;
+          newCategories.add(
+            MenuCategory(id: id, name: name, imageUrl: imageUrl),
           );
         }
       }
+
+      _categories.addAll(newCategories);
     } catch (e) {
-      _error = 'Error al cargar categorías: ${e.toString()}';
-      _loadDefaultCategories();
+      _error = 'Error al generar categorías: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  void _loadDefaultCategories() {
-    _categories =
-        categoryDefinitions.map((catDef) {
-          return MenuCategory(
-            id: catDef['id']!,
-            name: catDef['name']!,
-            imageUrl:
-                'https://cdn.pixabay.com/photo/2014/10/23/18/05/burger-500054_1280.jpg',
-            endpoint: catDef['endpoint']!,
-          );
-        }).toList();
   }
 
   MenuCategory getCategoryById(String id) {

@@ -7,11 +7,11 @@ class RocketButton extends StatelessWidget {
   final bool isPrimary;
 
   const RocketButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isPrimary = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

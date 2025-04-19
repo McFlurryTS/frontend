@@ -1,41 +1,29 @@
+import 'package:McDonalds/models/product_model.dart';
+
 class CartItem {
-  final String id;
-  final String productId;
-  final String name;
-  final double price;
-  final String image;
+  final Product product;
   final int quantity;
-  final Map<String, String> extras;
+  final Map<String, Set<String>> selectedExtras;
 
   CartItem({
-    required this.id,
-    required this.productId,
-    required this.name,
-    required this.price,
-    required this.image,
+    required this.product,
     required this.quantity,
-    required this.extras,
+    required this.selectedExtras,
   });
 
-  double get total => price * quantity;
+  double get total {
+    double basePrice = product.price * quantity;
+    double extrasTotal = 0.0;
 
-  CartItem copyWith({
-    String? id,
-    String? productId,
-    String? name,
-    double? price,
-    String? image,
-    int? quantity,
-    Map<String, String>? extras,
-  }) {
-    return CartItem(
-      id: id ?? this.id,
-      productId: productId ?? this.productId,
-      name: name ?? this.name,
-      price: price ?? this.price,
-      image: image ?? this.image,
-      quantity: quantity ?? this.quantity,
-      extras: extras ?? this.extras,
-    );
+    // Calcular el total de los extras seleccionados
+    selectedExtras.forEach((category, productIds) {
+      for (final productId in productIds) {
+        // Aquí deberías obtener el precio del producto extra
+        // Por ahora usamos un valor fijo como placeholder
+        extrasTotal += 10.0; // Reemplazar con el precio real del extra
+      }
+    });
+
+    return basePrice + (extrasTotal * quantity);
   }
 }

@@ -1,31 +1,48 @@
-import 'package:flutter/material.dart'; // Importación necesaria para usar Color
+import 'package:flutter/material.dart';
 
 class MenuCategory {
   final String id;
   final String name;
   final String imageUrl;
-  final String endpoint;
 
-  MenuCategory({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-    required this.endpoint,
-  });
+  MenuCategory({required this.id, required this.name, required this.imageUrl});
 
-  // Generar colores dinámicamente basados en el ID
   Color get color {
-    final colors = [
-      const Color(0xFFd7e7fe), // Naranja
-      const Color(0xFFe9ffdb), // Rojo
-      const Color(0xFFffe1d7), // Azul
-      const Color(0xFFe7d9fd), // Verde
-      const Color(0xFFfff6d9), // Morado
+    final Map<String, Color> categoryColors = {
+      'DESAYUNOS': const Color(0xFFFFF3E0), // Naranja desayuno suave
+      'A_LA_CARTA_PAPAS': const Color(0xFFFFF8E1), // Amarillo dorado suave
+      'A_LA_CARTA_HAMBURGUESAS': const Color(0xFFFFEBEE), // Rojo marca suave
+      'A_LA_CARTA_NUGGETS': const Color(0xFFF3E5F5), // Morado suave
+      'PROMOCIONES': const Color(0xFFFCE4EC), // Rosa promocional
+      'BEBIDAS': const Color(0xFFE3F2FD), // Azul refrescante
+      'TU_FAV_99': const Color(0xFFE8F5E9), // Verde suave
+      'FAMILY_BOX': const Color(0xFFFFF3E0), // Naranja familiar
+      'POSTRES_Y_MALTEADAS': const Color(0xFFF9FBE7), // Lima helado
+      'CAJITA_FELIZ': const Color(0xFFFFECB3), // Amarillo feliz
+      'EXCLUSIVO_PICKUP': const Color(0xFFE0F7FA), // Cyan exclusivo
+      'MCTRIOS_MEDIANOS': const Color(0xFFF1F8E9), // Verde trio
+      'MCTRIOS_GRANDES': const Color(0xFFE8EAF6), // Indigo suave
+      'MCTRIO_3X3': const Color(0xFFFCE4EC), // Rosa especial
+    };
+
+    if (categoryColors.containsKey(id)) {
+      return categoryColors[id]!;
+    }
+
+    final defaultColors = [
+      const Color(0xFFFFEBEE), // Rojo McD suave
+      const Color(0xFFFFF3E0), // Naranja McD suave
+      const Color(0xFFFFF8E1), // Amarillo McD suave
+      const Color(0xFFF3E5F5), // Morado complementario
+      const Color(0xFFE3F2FD), // Azul complementario
+      const Color(0xFFE8F5E9), // Verde complementario
+      const Color(0xFFEDE7F6), // Violeta complementario
+      const Color(0xFFFCE4EC), // Rosa complementario
     ];
-    return colors[id.hashCode % colors.length];
+
+    return defaultColors[id.hashCode % defaultColors.length];
   }
 
-  // Versión más oscura del color
   Color get darkerColor => Color.fromARGB(
     color.alpha,
     (color.red * 0.8).round(),

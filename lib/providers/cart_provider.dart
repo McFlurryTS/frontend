@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
-import '../models/cart_item_model.dart';
-import '../models/product_model.dart';
+import 'package:McDonalds/models/product_model.dart';
+import 'package:McDonalds/models/cart_item_model.dart';
 
 class CartProvider with ChangeNotifier {
   final Map<String, CartItem> _items = {};
@@ -16,33 +15,50 @@ class CartProvider with ChangeNotifier {
   void addItem(
     Product product,
     int quantity,
-    Map<String, String> selectedExtras,
+    Map<String, Set<String>> selectedExtras,
   ) {
-    if (_items.containsKey(product.id)) {
-      // Actualizar item existente
+    // Crear un ID único basado en el producto y sus extras seleccionados
+    final String itemId = _generateItemId(product.id, selectedExtras);
+
+    // Si el item ya existe, actualizar cantidad
+    if (_items.containsKey(itemId)) {
       _items.update(
-        product.id,
-        (existingItem) => existingItem.copyWith(
+        itemId,
+        (existingItem) => CartItem(
+          product: product,
           quantity: existingItem.quantity + quantity,
-          extras: selectedExtras,
+          selectedExtras: Map<String, Set<String>>.from(selectedExtras),
         ),
       );
     } else {
-      // Agregar nuevo item
+      // Si no existe, agregar nuevo item
       _items.putIfAbsent(
-        product.id,
+        itemId,
         () => CartItem(
-          id: const Uuid().v4(),
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.image,
+          product: product,
           quantity: quantity,
-          extras: selectedExtras,
+          selectedExtras: Map<String, Set<String>>.from(selectedExtras),
         ),
       );
     }
+
     notifyListeners();
+  }
+
+  String _generateItemId(
+    String productId,
+    Map<String, Set<String>> selectedExtras,
+  ) {
+    // Crear un string único basado en el ID del producto y los extras seleccionados
+    final buffer = StringBuffer(productId);
+    final sortedCategories = selectedExtras.keys.toList()..sort();
+
+    for (final category in sortedCategories) {
+      final products = selectedExtras[category]!.toList()..sort();
+      buffer.write('_${category}_${products.join('_')}');
+    }
+
+    return buffer.toString();
   }
 
   void removeItem(String productId) {

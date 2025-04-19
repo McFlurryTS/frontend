@@ -1,137 +1,127 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:McDonalds/models/category_model.dart';
-import 'package:skeletonizer/skeletonizer.dart';
+import 'package:McDonalds/widgets/optimized_image.dart';
 
-class CategoryCard extends StatelessWidget {
+class CategoryCard extends StatefulWidget {
   final MenuCategory category;
   final VoidCallback? onTap;
 
   const CategoryCard({super.key, required this.category, this.onTap});
 
-  Widget _buildImageWithSkeleton({
-    required String imageUrl,
-    required double width,
-    required double height,
-    Color? color,
-    BlendMode? colorBlendMode,
-    double opacity = 1.0,
-  }) {
-    return Container(
-      width: width,
-      height: height,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Opacity(
-            opacity: opacity,
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.contain,
-              color: color,
-              colorBlendMode: colorBlendMode,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape:
-                        width == height ? BoxShape.circle : BoxShape.rectangle,
-                  ),
-                  child: Skeletonizer(
-                    enabled: true,
-                    effect: ShimmerEffect(
-                      baseColor: Colors.grey[400]!,
-                      highlightColor: Colors.grey[200]!,
-                    ),
-                    child: Container(color: Colors.white),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+  @override
+  State<CategoryCard> createState() => _CategoryCardState();
+}
+
+class _CategoryCardState extends State<CategoryCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
     );
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _fadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await Future.delayed(const Duration(milliseconds: 10));
+    if (mounted) {
+      await _controller.reverse();
+      widget.onTap?.call();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/category',
-          arguments: {'id': category.id, 'endpoint': category.endpoint},
-        );
-      },
-      child: Container(
-        width: 168,
-        height: 180,
-        decoration: BoxDecoration(
-          color: category.color,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2), // Color de la sombra
-              blurRadius: 10, // Difuminado
-              offset: const Offset(0, 5), // Desplazamiento
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _handleTap(),
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder:
+            (context, child) => Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Opacity(opacity: _fadeAnimation.value, child: child),
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Sombra con tamaño fijo
-                  Positioned(
-                    bottom: -19,
-                    left: 0.8,
-                    child: SizedBox(
-                      width: 175,
-                      height: 175,
-                      child: Opacity(
-                        opacity: 0.08,
-                        child: _buildImageWithSkeleton(
-                          imageUrl: category.imageUrl,
-                          width: 175,
-                          height: 175,
-                          color: Colors.black,
-                          colorBlendMode: BlendMode.srcATop,
+        child: Container(
+          width: 168,
+          height: 180,
+          decoration: BoxDecoration(
+            color: widget.category.color,
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: OptimizedImage(
+                    imageUrl: widget.category.imageUrl,
+                    fit: BoxFit.contain,
+                    highPriority: true, // Cargar con prioridad alta
+                    cacheWidth:
+                        336, // 2x el ancho del contenedor para pantallas de alta densidad
+                    cacheHeight: 360,
+                    enableBlur: true,
+                    placeholder: Container(
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.grey[300],
                         ),
                       ),
                     ),
+                    errorWidget:
+                        (_, __) => Icon(
+                          Icons.fastfood,
+                          size: 40,
+                          color: Colors.grey[400],
+                        ),
                   ),
-                  // Imagen principal con tamaño fijo
-                  SizedBox(
-                    width: 180,
-                    height: 180,
-                    child: _buildImageWithSkeleton(
-                      imageUrl: category.imageUrl,
-                      width: 180,
-                      height: 180,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                category.name,
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                  color: Colors.black87,
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                child: Text(
+                  widget.category.name,
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

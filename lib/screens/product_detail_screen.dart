@@ -6,6 +6,7 @@ import 'package:McDonalds/providers/products_provider.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:McDonalds/providers/cart_provider.dart';
+import 'package:McDonalds/widgets/optimized_image.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -18,49 +19,64 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int quantity = 1;
-  Map<String, String> selectedProducts = {};
+  // Cambiar a Map<String, Set<String>> para permitir múltiples selecciones por categoría
+  final Map<String, Set<String>> selectedProducts = {};
 
-  final Map<String, String> categoryIdToLogical = {
-    "HAMBURGUESAS_CATEGORY_ID": "hamburguesas",
-    "BEVERAGE_CATEGORY_ID": "bebidas",
-    "ACOMPANAR_CATEGORY_ID": "acompanamientos",
-    "DESSERT_CATEGORY_ID": "postres",
-    "CHICKEN_CATEGORY_ID": "pollo",
-    "BREAKFAST_CATEGORY_ID": "desayunos",
+  final Map<String, List<String>> recommendedCategoriesMap = {
+    'BEBIDAS': ['POSTRES_Y_MALTEADAS', 'FAMILY_BOX'],
+    'A_LA_CARTA_HAMBURGUESAS': [
+      'A_LA_CARTA_PAPAS',
+      'BEBIDAS',
+      'POSTRES_Y_MALTEADAS',
+    ],
+    'A_LA_CARTA_NUGGETS': ['A_LA_CARTA_PAPAS', 'BEBIDAS'],
+    'A_LA_CARTA_PAPAS': ['BEBIDAS', 'POSTRES_Y_MALTEADAS'],
+    'POSTRES_Y_MALTEADAS': ['BEBIDAS'],
+    'CAJITA_FELIZ': ['POSTRES_Y_MALTEADAS', 'BEBIDAS'],
+    'MCTRIOS_MEDIANOS': ['POSTRES_Y_MALTEADAS', 'A_LA_CARTA_PAPAS'],
+    'MCTRIOS_GRANDES': ['POSTRES_Y_MALTEADAS', 'A_LA_CARTA_PAPAS'],
+    'MCTRIO_3X3': ['A_LA_CARTA_PAPAS', 'BEBIDAS'],
+    'TU_FAV_99': ['BEBIDAS', 'POSTRES_Y_MALTEADAS'],
+    'PROMOCIONES': ['A_LA_CARTA_HAMBURGUESAS', 'BEBIDAS'],
+    'FAMILY_BOX': ['BEBIDAS', 'POSTRES_Y_MALTEADAS'],
+    'DESAYUNOS': ['BEBIDAS', 'POSTRES_Y_MALTEADAS'],
   };
 
-  final Map<String, List<String>> relatedCategories = {
-    'desayunos': ['bebidas'],
-    'hamburguesas': ['bebidas', 'acompanamientos', 'postres', 'pollo'],
-    'pollo': ['acompanamientos', 'bebidas', 'postres'],
-    'postres': ['bebidas'],
-    'bebidas': ['acompanamientos'],
-    'acompanamientos': ['bebidas'],
+  final Map<String, String> categoryNames = {
+    'BEBIDAS': 'Bebidas',
+    'POSTRES_Y_MALTEADAS': 'Postres y Malteadas',
+    'A_LA_CARTA_PAPAS': 'Papas',
+    'A_LA_CARTA_HAMBURGUESAS': 'Hamburguesas',
+    'FAMILY_BOX': 'Family Box',
   };
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => _fetchComplements());
+    _loadRecommendedProducts();
   }
 
-  void _fetchComplements() {
+  void _loadRecommendedProducts() {
     final provider = Provider.of<ProductsProvider>(context, listen: false);
-    final logicalCategory =
-        categoryIdToLogical[widget.product.categoryId] ??
-        widget.product.categoryId;
-    final categories = relatedCategories[logicalCategory] ?? [];
-    for (final category in categories) {
-      provider.fetchProductsByCategory(category);
+    if (provider.productsByCategory.isEmpty) {
+      provider.fetchMenuCompleto();
     }
   }
 
   void _handleProductTap(String category, String productId) {
     setState(() {
-      if (selectedProducts[category] == productId) {
-        selectedProducts.remove(category);
+      // Inicializar el set si no existe
+      selectedProducts[category] ??= {};
+
+      // Toggle: si ya está seleccionado lo quita, si no lo agrega
+      if (selectedProducts[category]!.contains(productId)) {
+        selectedProducts[category]!.remove(productId);
+        // Si el set queda vacío, eliminar la categoría
+        if (selectedProducts[category]!.isEmpty) {
+          selectedProducts.remove(category);
+        }
       } else {
-        selectedProducts[category] = productId;
+        selectedProducts[category]!.add(productId);
       }
     });
   }
@@ -86,11 +102,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         context,
         listen: false,
       ).getProductsByCategory(entry.key);
-      final selectedProduct = products.firstWhere(
-        (p) => p.id == entry.value,
-        orElse: () => widget.product,
-      );
-      extrasTotal += selectedProduct.price;
+
+      // Sumar el precio de todos los productos seleccionados en la categoría
+      for (final productId in entry.value) {
+        final selectedProduct = products.firstWhere(
+          (p) => p.id == productId,
+          orElse: () => widget.product,
+        );
+        extrasTotal += selectedProduct.price;
+      }
     }
 
     return (basePrice + extrasTotal) * quantity;
@@ -99,29 +119,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildProductImage(String imageUrl, {bool isCircular = false}) {
     return Container(
       width: isCircular ? 80 : double.infinity,
-      height: isCircular ? 80 : 200,
+      height: isCircular ? 80 : 280,
       decoration: BoxDecoration(
         shape: isCircular ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: !isCircular ? BorderRadius.circular(12) : null,
       ),
       clipBehavior: Clip.antiAlias,
-      child: Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Skeletonizer(
-            enabled: true,
-            containersColor: Colors.grey[300],
-            effect: ShimmerEffect(
-              baseColor: Colors.grey[400]!,
-              highlightColor: Colors.grey[200]!,
+      child: Center(
+        child: OptimizedImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.contain,
+          width: isCircular ? 60 : null,
+          height: isCircular ? 60 : null,
+          cacheWidth: isCircular ? 160 : 600,
+          cacheHeight: isCircular ? 160 : 600,
+          enableBlur: true,
+          borderRadius: !isCircular ? 12 : null,
+          placeholder: Container(
+            color: Colors.grey[200],
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.grey[400],
+              ),
             ),
-            child: Container(color: Colors.white),
-          );
-        },
-        errorBuilder:
-            (_, __, ___) => Icon(Icons.fastfood, size: isCircular ? 32 : 40),
+          ),
+          errorWidget:
+              (_, __) => Icon(
+                Icons.fastfood,
+                size: isCircular ? 32 : 40,
+                color: Colors.grey[400],
+              ),
+        ),
       ),
     );
   }
@@ -129,147 +158,140 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget buildCircleProductSlider(String category) {
     return Consumer<ProductsProvider>(
       builder: (context, provider, _) {
-        final isLoading = provider.isLoadingCategory(category);
-        final error = provider.getErrorForCategory(category);
         final products = provider.getProductsByCategory(category);
-        final isSelected = (String id) => selectedProducts[category] == id;
+        if (products.isEmpty) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(category.toUpperCase(), style: RocketTextStyles.headline2),
-            const SizedBox(height: 12),
-            Skeletonizer(
-              enabled: isLoading,
-              containersColor: Colors.grey[300],
-              effect: ShimmerEffect(
-                baseColor: Colors.grey[400]!,
-                highlightColor: Colors.grey[200]!,
-              ),
-              child: SizedBox(
-                height: 150,
-                child:
-                    error != null
-                        ? Center(child: Text(error))
-                        : products.isEmpty && !isLoading
-                        ? Center(child: Text("No hay productos en $category"))
-                        : ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: isLoading ? 3 : products.length,
-                          itemBuilder: (context, index) {
-                            if (isLoading) {
-                              return Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                width: 90,
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      height: 12,
-                                      width: 40,
-                                      color: Colors.white,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            final product = products[index];
-                            final selected = isSelected(product.id);
-
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                              width: 90,
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap:
-                                        () => _handleProductTap(
-                                          category,
-                                          product.id,
-                                        ),
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color:
-                                              selected
-                                                  ? RocketColors.primary
-                                                  : Colors.grey,
-                                          width: selected ? 4 : 1,
-                                        ),
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          ClipOval(
-                                            child: _buildProductImage(
-                                              product.image,
-                                              isCircular: true,
-                                            ),
-                                          ),
-                                          if (selected)
-                                            Positioned(
-                                              top: 0,
-                                              right: 0,
-                                              child: Container(
-                                                width: 20,
-                                                height: 20,
-                                                decoration: const BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: Colors.yellow,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.check,
-                                                  size: 14,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    product.name,
-                                    style: RocketTextStyles.body.copyWith(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '\$${product.price.toStringAsFixed(0)}',
-                                    style: RocketTextStyles.body.copyWith(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w900,
-                                      color: RocketColors.secondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                category.toUpperCase(),
+                style: RocketTextStyles.headline2.copyWith(fontSize: 16),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 140, // Altura fija para todos los sliders
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: products.length,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  final selected =
+                      selectedProducts[category]?.contains(product.id) ?? false;
+
+                  return Container(
+                    width: 100, // Ancho fijo para todos los items
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _handleProductTap(category, product.id),
+                          child: Container(
+                            width: 70, // Reducido de 85 a 70
+                            height: 70, // Reducido de 85 a 70
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    selected
+                                        ? RocketColors.primary
+                                        : Colors.grey[400]!,
+                                width: selected ? 3 : 1,
+                              ),
+                            ),
+                            child: Stack(
+                              clipBehavior:
+                                  Clip.none, // Añadido para controlar overflow
+                              children: [
+                                ClipOval(
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 60,
+                                      height: 60,
+                                      child: OptimizedImage(
+                                        imageUrl: product.image,
+                                        fit: BoxFit.contain,
+                                        width: 60,
+                                        height: 60,
+                                        cacheWidth:
+                                            120, // 2x el tamaño para pantallas de alta densidad
+                                        cacheHeight: 120,
+                                        enableBlur: true,
+                                        placeholder: Container(
+                                          color: Colors.grey[200],
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.grey[300],
+                                            ),
+                                          ),
+                                        ),
+                                        errorWidget:
+                                            (_, __) => Icon(
+                                              Icons.fastfood,
+                                              size: 24,
+                                              color: Colors.grey[400],
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (selected)
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      width: 22,
+                                      height: 22,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.yellow,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.check,
+                                        size: 14, // Reducido de 16 a 14
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          product.name,
+                          style: RocketTextStyles.body.copyWith(
+                            fontFamily: GoogleFonts.poppins().fontFamily,
+                            fontSize: 12,
+                            fontWeight:
+                                selected ? FontWeight.w900 : FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '\$${product.price.toStringAsFixed(0)}',
+                          style: RocketTextStyles.body.copyWith(
+                            fontFamily: GoogleFonts.roboto().fontFamily,
+                            fontSize: 12,
+                            fontWeight:
+                                selected ? FontWeight.w900 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         );
       },
@@ -279,9 +301,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final logicalCategory =
-        categoryIdToLogical[product.categoryId] ?? product.categoryId;
-    final categories = relatedCategories[logicalCategory] ?? [];
+    final categories = recommendedCategoriesMap[product.category] ?? [];
     final bool hasAnyRelated = categories.any(
       (cat) =>
           Provider.of<ProductsProvider>(
@@ -298,7 +318,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         elevation: 0,
       ),
       body: Skeletonizer(
-        enabled: false, // Se maneja individualmente en cada sección
+        enabled: false,
         containersColor: Colors.grey[300],
         effect: ShimmerEffect(
           baseColor: Colors.grey[400]!,
@@ -309,82 +329,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                //columna titulo y precio
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    textAlign: TextAlign.start,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '\$${widget.product.price.toStringAsFixed(0)}',
-                    style: GoogleFonts.roboto(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.9,
-                    ),
-                    textAlign: TextAlign.start,
-                  ),
-                ],
+              Text(
+                product.name,
+                style: GoogleFonts.poppins(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                '\$${product.price.toStringAsFixed(0)}',
+                style: GoogleFonts.roboto(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.9,
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Contenedor centrado para imagen, título y controles
               Center(
                 child: Column(
-                  //columna hamburguesa
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _buildProductImage(product.image),
+                    SizedBox(
+                      width: 280, // Ancho fijo para la imagen
+                      height: 280, // Alto fijo para la imagen
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildProductImage(product.image),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    SizedBox(
+                      width: 280, // Mismo ancho que la imagen
+                      child: Text(
+                        product.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      product.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      height: 48,
-                      width: 140,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            onPressed:
-                                quantity > 1
-                                    ? () => setState(() => quantity--)
-                                    : null,
-                            icon: const Icon(Icons.remove),
-                          ),
-                          const SizedBox(width: 14),
-                          Text(
-                            '$quantity',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          IconButton(
-                            onPressed: () => setState(() => quantity++),
-                            icon: const Icon(Icons.add),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildQuantitySelector(),
                   ],
                 ),
               ),
@@ -396,60 +383,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               for (final cat in categories) buildCircleProductSlider(cat),
               const SizedBox(height: 16),
-              Text(
-                "Información de alérgenos",
-                style: RocketTextStyles.headline2,
-              ),
-              Text(
-                'Contiene:',
-                style: RocketTextStyles.body.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: 10),
-              if (product.allergens.isEmpty)
-                Text(
-                  "No contiene alérgenos importantes.",
-                  style: RocketTextStyles.body,
-                )
-              else
-                Wrap(
-                  spacing: 8, // Espacio horizontal entre chips
-                  runSpacing: 8, // Espacio vertical entre filas
-                  children:
-                      product.allergens.map((allergen) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Color(Colors.grey[200]!.value),
-                            border: Border.all(
-                              color: Color(Colors.grey[400]!.value),
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(width: 4),
-                              Text(
-                                allergen,
-                                style: RocketTextStyles.body.copyWith(
-                                  fontSize: 14,
-                                  color: RocketColors.text,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                ),
-              const SizedBox(height: 16),
+              _buildAllergenSection(product),
               Text(
                 "Total: \$${totalPrice.toStringAsFixed(0)}",
                 style: RocketTextStyles.headline2.copyWith(
@@ -461,26 +395,110 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: Material(
-        color: RocketColors.primary,
-        child: InkWell(
-          onTap: _addToCart,
-          splashColor: Colors.black12,
-          highlightColor: Colors.black12,
-          child: Container(
-            width: double.infinity,
-            height: 78,
-            padding: const EdgeInsets.symmetric(horizontal: 26),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Añadir al carrito', style: RocketTextStyles.button2),
-                Text(
-                  '\$${totalPrice.toStringAsFixed(0)}',
-                  style: RocketTextStyles.button2,
-                ),
-              ],
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  Widget _buildQuantitySelector() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[400]!),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      height: 48,
+      width: 140,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
+            icon: const Icon(Icons.remove),
+          ),
+          const SizedBox(width: 14),
+          Text(
+            '$quantity',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
+          ),
+          const SizedBox(width: 14),
+          IconButton(
+            onPressed: () => setState(() => quantity++),
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllergenSection(Product product) {
+    if (!product.hasAllergens) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Información de alérgenos", style: RocketTextStyles.headline2),
+        const SizedBox(height: 6),
+        Text('Contiene:', style: RocketTextStyles.body),
+        const SizedBox(height: 10),
+        if (product.allergens.isEmpty)
+          Text(
+            "No contiene alérgenos importantes.",
+            style: RocketTextStyles.body,
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                product.allergens.map((allergen) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      border: Border.all(color: Colors.grey[400]!),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      allergen,
+                      style: RocketTextStyles.body.copyWith(
+                        fontSize: 14,
+                        color: RocketColors.text,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
+          ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Material(
+      color: RocketColors.primary,
+      child: InkWell(
+        onTap: _addToCart,
+        splashColor: Colors.black12,
+        highlightColor: Colors.black12,
+        child: Container(
+          width: double.infinity,
+          height: 78,
+          padding: const EdgeInsets.symmetric(horizontal: 26),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Añadir al carrito', style: RocketTextStyles.button2),
+              Text(
+                '\$${totalPrice.toStringAsFixed(0)}',
+                style: RocketTextStyles.button2,
+              ),
+            ],
           ),
         ),
       ),
