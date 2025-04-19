@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:McDonalds/models/category_model.dart';
 import 'package:McDonalds/models/product_model.dart';
-import 'package:McDonalds/services/storage_service.dart';
 import 'package:McDonalds/services/image_cache_service.dart';
+import 'package:McDonalds/services/storage_service.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
 import 'package:McDonalds/widgets/optimized_image.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _showLoading = true;
   bool _isFirstLoad = true;
   final ValueNotifier<int> _currentPromotionIndex = ValueNotifier<int>(0);
 
@@ -42,67 +41,47 @@ class _HomeScreenState extends State<HomeScreen> {
       listen: false,
     );
 
-    // Obtener los datos primero
     if (!productsProvider.isInitialized) {
       await productsProvider.fetchMenuCompleto();
 
-      if (mounted && categoriesProvider.categories.isEmpty) {
+      if (mounted &&
+          !productsProvider.hasError &&
+          categoriesProvider.categories.isEmpty) {
         await categoriesProvider.generateCategoriesFromProducts(
           productsProvider,
         );
       }
 
-      // Precargar las imágenes prioritarias del home
       if (mounted) {
         _preloadImagesForHome(productsProvider, categoriesProvider);
       }
+    }
 
-      if (mounted) {
-        setState(() {
-          _showLoading = false;
-          _isFirstLoad = false;
-        });
-      }
-    } else {
-      // Si ya están inicializados, precargar imágenes de todos modos
-      _preloadImagesForHome(productsProvider, categoriesProvider);
-
-      if (mounted) {
-        setState(() {
-          _showLoading = false;
-          _isFirstLoad = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _isFirstLoad = false;
+      });
     }
   }
 
-  // Método para precargar imágenes del home con alta prioridad
   void _preloadImagesForHome(
     ProductsProvider productsProvider,
     CategoriesProvider categoriesProvider,
   ) {
     try {
-      // Obtener las URLs para precarga prioritaria
       final List<String> priorityUrls = [];
 
-      // Imágenes de promociones (las más importantes)
+      // Solo precargar las primeras imágenes más importantes
       final promotions = productsProvider.getProductsByCategory('PROMOCIONES');
       if (promotions.isNotEmpty) {
-        final randomPromotions = _getRandomPromotions(promotions);
-        priorityUrls.addAll(
-          randomPromotions.map((promo) => promo.image).toList(),
-        );
+        priorityUrls.addAll(promotions.take(2).map((p) => p.image));
       }
 
-      // Las primeras imágenes de categorías
       final categories = categoriesProvider.categories;
       if (categories.isNotEmpty) {
-        priorityUrls.addAll(
-          categories.take(6).map((cat) => cat.imageUrl).toList(),
-        );
+        priorityUrls.addAll(categories.take(2).map((c) => c.imageUrl));
       }
 
-      // Precargar las imágenes prioritarias
       if (priorityUrls.isNotEmpty) {
         ImageCacheService.preloadHomeImages(priorityUrls);
       }
@@ -125,12 +104,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer2<ProductsProvider, CategoriesProvider>(
       builder: (context, productsProvider, categoriesProvider, _) {
+        final bool isLoading =
+            (productsProvider.isLoading || categoriesProvider.isLoading) &&
+            _isFirstLoad;
+
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Scaffold(
             backgroundColor: Colors.grey[100],
             body: Skeletonizer(
-              enabled: _showLoading && _isFirstLoad && !StorageService.hasLocalData(),
+              enabled: isLoading,
               containersColor: Colors.grey[300],
               effect: ShimmerEffect(
                 baseColor: Colors.grey[300]!,
@@ -138,15 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: RefreshIndicator(
                 onRefresh: () async {
-                  setState(() => _showLoading = true);
                   await StorageService.clearCache();
                   await productsProvider.fetchMenuCompleto();
                   await categoriesProvider.generateCategoriesFromProducts(
                     productsProvider,
                   );
-                  if (mounted) {
-                    setState(() => _showLoading = false);
-                  }
                 },
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(
@@ -169,15 +148,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       stretch: true,
                       backgroundColor: const Color(0xFFDA291C),
                       flexibleSpace: LayoutBuilder(
-                        builder: (BuildContext context, BoxConstraints constraints) {
+                        builder: (
+                          BuildContext context,
+                          BoxConstraints constraints,
+                        ) {
                           final top = constraints.biggest.height;
-                          final collapsedHeight = MediaQuery.of(context).padding.top + kToolbarHeight;
+                          final collapsedHeight =
+                              MediaQuery.of(context).padding.top +
+                              kToolbarHeight;
                           final expandedHeight = 170.0;
-                          final fraction = ((top - collapsedHeight) / (expandedHeight - collapsedHeight)).clamp(0.0, 1.0);
-                          
+                          final fraction = ((top - collapsedHeight) /
+                                  (expandedHeight - collapsedHeight))
+                              .clamp(0.0, 1.0);
+
                           return FlexibleSpaceBar(
                             titlePadding: EdgeInsets.only(
-                              left: 16 + (fraction * 9), // Ajusta el padding del título según el scroll
+                              left: 16 + (fraction * 9),
                               bottom: 16,
                             ),
                             centerTitle: false,
@@ -186,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Image.asset(
                                   'assets/icons/logo/72_logo.png',
-                                  height: 24 + (fraction * 8), // El logo se hace más grande cuando está expandido
+                                  height: 24 + (fraction * 8),
                                 ),
                                 const SizedBox(width: 8),
                                 const Text(
@@ -202,7 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             background: Container(
                               decoration: const BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Color(0xFFDA291C), Color(0xFFED1C24)],
+                                  colors: [
+                                    Color(0xFFDA291C),
+                                    Color(0xFFED1C24),
+                                  ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
@@ -219,11 +208,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: const [
                                           Text(
-                                            'Welcome Back, Fernanda! 👋',
+                                            'Welcome Back! 👋',
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontSize: 24,
@@ -232,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                           SizedBox(height: 5),
                                           Text(
-                                            'OBTEN UN DESCUENTO EN LO QUE MAS TE GUSTA!',
+                                            'OBTÉN UN DESCUENTO EN LO QUE MÁS TE GUSTA',
                                             style: TextStyle(
                                               color: Colors.white70,
                                               fontSize: 14,
@@ -250,12 +241,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: Colors.white24,
                                       ),
                                       alignment: Alignment.center,
-                                      child: const Text(
-                                        'Foto',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      child: const Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: 32,
                                       ),
                                     ),
                                   ],
@@ -430,6 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final promotions = productsProvider.getProductsByCategory('PROMOCIONES');
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (promotions.isNotEmpty) ...[
           _buildPromotionsSlider(context, promotions),
@@ -438,9 +428,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Primera columna
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildFakeCard(
                     icon: Icons.search,
@@ -450,30 +440,32 @@ class _HomeScreenState extends State<HomeScreen> {
                     context: context,
                   ),
                   const SizedBox(height: 20),
-                  // Categorías pares
-                  ...categories.asMap().entries.where((e) => e.key.isEven).map((
-                    entry,
-                  ) {
-                    return Column(
-                      children: [
-                        _buildCategoryCard(context, entry.value),
-                        const SizedBox(height: 20),
-                      ],
-                    );
-                  }),
+                  ...categories
+                      .asMap()
+                      .entries
+                      .where((e) => e.key.isEven)
+                      .map(
+                        (entry) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildCategoryCard(context, entry.value),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
                 ],
               ),
             ),
             const SizedBox(width: 20),
-            // Segunda columna
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Categorías impares
                   ...categories.asMap().entries.where((e) => !e.key.isEven).map(
                     (entry) {
                       if (entry.key == 3) {
                         return Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             _buildFakeCard(
                               icon: Icons.menu,
@@ -489,6 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }
                       return Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildCategoryCard(context, entry.value),
                           const SizedBox(height: 20),

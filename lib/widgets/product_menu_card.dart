@@ -47,25 +47,34 @@ class ProductMenuCard extends StatelessWidget {
                       color: Colors.white,
                       child: OptimizedImage(
                         imageUrl: product.image,
-                        fit: BoxFit.cover,
-                        cacheWidth: 300, // Optimizar el tamaño de cache
+                        fit: BoxFit.contain,
+                        cacheWidth: 300,
                         cacheHeight: 300,
-                        enableBlur: true, // Efecto blur mientras carga
-                        placeholder: Container(
-                          color: Colors.grey[100],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.grey[300],
-                            ),
-                          ),
-                        ),
+                        enableBlur: true,
+                        useSkeletonizer: true,
+                        borderRadius: 20,
                         errorWidget:
-                            (context, error) => Center(
-                              child: Icon(
-                                Icons.fastfood,
-                                size: 40,
-                                color: Colors.grey[400],
+                            (context, error) => Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(20),
+                                ),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.fastfood,
+                                    size: 24,
+                                    color: Colors.grey[400],
+                                  ),
+                                ),
                               ),
                             ),
                       ),
@@ -76,10 +85,7 @@ class ProductMenuCard extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,14 +102,24 @@ class ProductMenuCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        '\$${product.price.toStringAsFixed(0)}',
-                        style: GoogleFonts.roboto(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '\$${product.price.toStringAsFixed(0)}',
+                          style: GoogleFonts.roboto(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
                     ],
                   ),
                 ),

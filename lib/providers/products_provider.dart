@@ -7,37 +7,41 @@ import 'package:McDonalds/services/storage_service.dart';
 import 'package:McDonalds/services/image_cache_service.dart';
 
 class ProductsProvider with ChangeNotifier {
-  final String baseUrl = 'http://192.168.1.71:3000';
+  final String baseUrl = 'http://54.236.59.113';
   final Map<String, List<Product>> _productsByCategory = {};
-  bool _isLoading = false;
+  bool _isLoading = true; // Cambiado a true por defecto
   String? _error;
   bool _isInitialized = false;
+  bool _hasError = false;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
   Map<String, List<Product>> get productsByCategory => _productsByCategory;
   bool get isInitialized => _isInitialized;
+  bool get hasError => _hasError;
 
   Future<void> fetchMenuCompleto() async {
-    if (_isLoading) return; // Evitar múltiples cargas simultáneas
+    if (_isLoading && _isInitialized) return;
 
     try {
       _isLoading = true;
-      // Solo notificar al inicio si no tenemos datos
-      if (_productsByCategory.isEmpty) {
-        // notifyListeners();
-      }
+      _hasError = false;
+      _error = null;
+      notifyListeners(); // Notificar el inicio de la carga
 
-      // Intentar obtener datos locales primero
       List<Product> products = [];
 
       if (StorageService.shouldRefreshCache()) {
         products = await _fetchFromApi();
       } else {
-        products = StorageService.getProducts() ?? await _fetchFromApi();
+        final storedProducts = StorageService.getProducts();
+        if (storedProducts.isEmpty) {
+          products = await _fetchFromApi();
+        } else {
+          products = storedProducts;
+        }
       }
 
-      // Organizar productos por categoría
       _productsByCategory.clear();
       for (var product in products) {
         if (!_productsByCategory.containsKey(product.category)) {
@@ -46,18 +50,23 @@ class ProductsProvider with ChangeNotifier {
         _productsByCategory[product.category]!.add(product);
       }
 
-      // Precarga de imágenes en segundo plano
-      _preloadImages(products);
+      await _preloadImages(products);
 
       _isLoading = false;
       _isInitialized = true;
+      _hasError = false;
       _error = null;
-      notifyListeners();
     } catch (e) {
       _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
+      _hasError = true;
+      _error = 'Error al cargar el menú. Por favor, intenta de nuevo.';
+      debugPrint('Error en fetchMenuCompleto: $e');
     }
+    notifyListeners();
+  }
+
+  Future<void> retryLoading() async {
+    await fetchMenuCompleto();
   }
 
   Future<void> _preloadImages(List<Product> products) async {
@@ -71,7 +80,7 @@ class ProductsProvider with ChangeNotifier {
 
   Future<List<Product>> _fetchFromApi() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/menu_completo'));
+      final response = await http.get(Uri.parse('$baseUrl/api/menu_completo'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List<dynamic> rawProducts = data['menu'];

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:McDonalds/services/image_cache_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class OptimizedImage extends StatefulWidget {
   final String imageUrl;
@@ -19,6 +20,7 @@ class OptimizedImage extends StatefulWidget {
   final bool enableBlur;
   final double? borderRadius;
   final bool highPriority;
+  final bool useSkeletonizer;
 
   const OptimizedImage({
     super.key,
@@ -36,6 +38,7 @@ class OptimizedImage extends StatefulWidget {
     this.enableBlur = false,
     this.borderRadius,
     this.highPriority = false,
+    this.useSkeletonizer = false,
   });
 
   @override
@@ -121,22 +124,49 @@ class _OptimizedImageState extends State<OptimizedImage> {
     Widget imageWidget;
 
     if (_isLoading) {
-      // Mostrar placeholder mientras carga
-      imageWidget =
-          widget.placeholder ??
-          Container(
-            color: Colors.grey[200],
-            child: Center(
-              child: SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.0,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+      if (widget.useSkeletonizer) {
+        imageWidget = Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius:
+                widget.borderRadius != null
+                    ? BorderRadius.circular(widget.borderRadius!)
+                    : null,
+          ),
+          child: Skeletonizer(
+            enabled: true,
+            containersColor: Colors.grey[300],
+            effect: ShimmerEffect(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+            ),
+            child: Container(
+              color: Colors.white,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+        );
+      } else {
+        imageWidget =
+            widget.placeholder ??
+            Container(
+              color: Colors.grey[200],
+              child: Center(
+                child: SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.grey[400]!,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          );
+            );
+      }
     } else if (_imageBytes != null) {
       // Si tenemos bytes en memoria, usarlos (opción más rápida)
       imageWidget = Image.memory(

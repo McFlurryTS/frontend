@@ -1,9 +1,11 @@
 import 'package:McDonalds/models/product_model.dart';
 import 'package:McDonalds/providers/categories_provider.dart';
 import 'package:McDonalds/providers/survey_provider.dart';
+import 'package:McDonalds/providers/user_provider.dart';
 import 'package:McDonalds/screens/category_screen.dart';
 import 'package:McDonalds/screens/menu_screen.dart';
 import 'package:McDonalds/screens/product_detail_screen.dart';
+import 'package:McDonalds/screens/profile_screen.dart';
 import 'package:McDonalds/screens/search_screen.dart';
 import 'package:McDonalds/services/image_cache_service.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,9 @@ import 'package:McDonalds/models/survey_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:McDonalds/services/notification_service.dart';
+import 'package:McDonalds/screens/about_screen.dart';
+import 'package:McDonalds/screens/help_screen.dart';
+import 'package:McDonalds/screens/privacy_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +64,7 @@ class MyMcApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => SurveyProvider()),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: const MyApp(),
     );
@@ -111,6 +117,12 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => ProductDetailScreen(product: product),
             );
+          case '/privacy':
+            return MaterialPageRoute(builder: (_) => const PrivacyScreen());
+          case '/help':
+            return MaterialPageRoute(builder: (_) => const HelpScreen());
+          case '/about':
+            return MaterialPageRoute(builder: (_) => const AboutScreen());
           default:
             return null;
         }
@@ -148,7 +160,7 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
         currentIndexNotifier: _currentIndexNotifier,
       ),
       const Center(child: Text('Pedidos')),
-      const Center(child: Text('Mi Cuenta')),
+      const ProfileScreen(),
       const DemoScreen(),
     ];
     _simulateInitialLoad();
@@ -229,7 +241,7 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
                     _buildNavIcon(currentIndex, 2, Icons.gamepad),
                     _buildNavIcon(currentIndex, 3, Icons.shopping_bag),
                     _buildNavIcon(currentIndex, 4, Icons.person),
-                    _buildNavIcon(currentIndex, 5, Icons.settings),
+                    _buildNavIcon(currentIndex, 5, Icons.developer_mode),
                   ],
                   onTap: (index) {
                     _tabController.index = index;

@@ -19,9 +19,6 @@ class Product extends HiveObject {
   @HiveField(4)
   final String image;
 
-  @HiveField(5)
-  final String url;
-
   @HiveField(6)
   final String country;
 
@@ -29,7 +26,7 @@ class Product extends HiveObject {
   final bool active;
 
   @HiveField(8)
-  final DateTime updatedAt;
+  final DateTime updated_at;
 
   @HiveField(9)
   final double price;
@@ -43,27 +40,27 @@ class Product extends HiveObject {
     required this.name,
     required this.description,
     required this.image,
-    required this.url,
     required this.country,
     required this.active,
-    required this.updatedAt,
+    required this.updated_at,
     required this.price,
     this.allergens = const [],
   });
 
-  bool get hasAllergens => allergens != null;
+  bool get hasAllergens => allergens.isNotEmpty;
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] as String,
+      id:
+          json['id']
+              .toString(), // Convertir a String para garantizar compatibilidad
       category: json['category'] as String,
       name: json['name'] as String,
       description: json['description'] ?? '',
       image: json['image'] ?? '',
-      url: json['url'] ?? '',
       country: json['country'] ?? 'MX',
       active: json['active'] ?? true,
-      updatedAt: DateTime.parse(json['updatedAt']),
+      updated_at: DateTime.parse(json['updated_at']),
       price:
           double.tryParse(
             json['price'].toString().replaceAll('\$', '').trim(),

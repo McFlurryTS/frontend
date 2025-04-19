@@ -22,10 +22,9 @@ class ProductAdapter extends TypeAdapter<Product> {
       name: fields[2] as String,
       description: fields[3] as String,
       image: fields[4] as String,
-      url: fields[5] as String,
       country: fields[6] as String,
       active: fields[7] as bool,
-      updatedAt: fields[8] as DateTime,
+      updated_at: fields[8] as DateTime,
       price: fields[9] as double,
       allergens: (fields[10] as List).cast<String>(),
     );
@@ -34,7 +33,7 @@ class ProductAdapter extends TypeAdapter<Product> {
   @override
   void write(BinaryWriter writer, Product obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -45,14 +44,12 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..write(obj.description)
       ..writeByte(4)
       ..write(obj.image)
-      ..writeByte(5)
-      ..write(obj.url)
       ..writeByte(6)
       ..write(obj.country)
       ..writeByte(7)
       ..write(obj.active)
       ..writeByte(8)
-      ..write(obj.updatedAt)
+      ..write(obj.updated_at)
       ..writeByte(9)
       ..write(obj.price)
       ..writeByte(10)

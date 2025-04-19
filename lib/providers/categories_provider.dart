@@ -4,7 +4,7 @@ import 'package:McDonalds/providers/products_provider.dart';
 
 class CategoriesProvider with ChangeNotifier {
   final List<MenuCategory> _categories = [];
-  bool _isLoading = false;
+  bool _isLoading = true; // Cambiado a true por defecto
   String? _error;
 
   List<MenuCategory> get categories => _categories;
@@ -13,11 +13,11 @@ class CategoriesProvider with ChangeNotifier {
 
   // Categorías desde el JSON
   static const List<Map<String, String>> categoryDefinitions = [
+    {'id': 'PROMOCIONES', 'name': 'Promociones'}, // Mover promociones al inicio
     {'id': 'DESAYUNOS', 'name': 'Desayunos'},
     {'id': 'A_LA_CARTA_PAPAS', 'name': 'Papas a la carta'},
     {'id': 'A_LA_CARTA_HAMBURGUESAS', 'name': 'Hamburguesas a la carta'},
     {'id': 'A_LA_CARTA_NUGGETS', 'name': 'Nuggets a la carta'},
-    {'id': 'PROMOCIONES', 'name': 'Promociones'},
     {'id': 'BEBIDAS', 'name': 'Bebidas'},
     {'id': 'TU_FAV_99', 'name': 'Tu Fav x \$99'},
     {'id': 'FAMILY_BOX', 'name': 'Family Box'},
@@ -32,14 +32,16 @@ class CategoriesProvider with ChangeNotifier {
   Future<void> generateCategoriesFromProducts(
     ProductsProvider productsProvider,
   ) async {
+    if (_isLoading && _categories.isNotEmpty) return;
+
     _isLoading = true;
     _error = null;
-    _categories.clear();
-    notifyListeners();
+    notifyListeners(); // Notificar el inicio de la carga
 
     try {
       final List<MenuCategory> newCategories = [];
 
+      // Procesar primero las categorías más importantes
       for (final def in categoryDefinitions) {
         final id = def['id']!;
         final name = def['name']!;
@@ -53,6 +55,7 @@ class CategoriesProvider with ChangeNotifier {
         }
       }
 
+      _categories.clear();
       _categories.addAll(newCategories);
     } catch (e) {
       _error = 'Error al generar categorías: $e';
