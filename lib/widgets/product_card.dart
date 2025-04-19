@@ -2,7 +2,6 @@ import 'package:McDonalds/utils/rocket_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:McDonalds/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:McDonalds/widgets/optimized_image.dart';
 
 class ProductCard extends StatefulWidget {

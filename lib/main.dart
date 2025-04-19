@@ -21,9 +21,19 @@ import 'package:McDonalds/providers/onboarding_provider.dart';
 import 'package:McDonalds/widgets/onboarding_overlay.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:McDonalds/models/survey_model.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:McDonalds/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Inicializar servicio de notificaciones
+  await NotificationService.init();
+
   await Hive.initFlutter();
 
   // Registrar el adapter
@@ -57,7 +67,6 @@ class MyMcApp extends StatelessWidget {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

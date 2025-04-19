@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "449755461090",
+    "project_id": "rocket-ui-15625",
+    "storage_bucket": "rocket-ui-15625.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:449755461090:android:6a4872c4da27f1afe5f5bb",
+        "android_client_info": {
+          "package_name": "com.example.McDonalds"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAObyIyB9op1frW_WChq-YroJg23_-qSgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:McDonalds/providers/onboarding_provider.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
+import 'package:McDonalds/services/notification_service.dart';
 
 class StepOne extends StatelessWidget {
   const StepOne({super.key});
@@ -22,15 +23,13 @@ class StepOne extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children:
-                  [
-                    'Big Mac',
-                    'McNuggets',
-                    'Cuarto de libra',
-                    'McPollo',
-                    'Ensalada',
-                    'Papas grandes',
-                  ].map((product) {
+                  NotificationService.getFavoriteProducts().map((product) {
                     final isSelected = provider.isOptionSelected(0, product);
+                    if (isSelected) {
+                      NotificationService.subscribeToTopic(product);
+                    } else {
+                      NotificationService.unsubscribeFromTopic(product);
+                    }
                     return _buildOptionCard(
                       text: product,
                       isSelected: isSelected,
