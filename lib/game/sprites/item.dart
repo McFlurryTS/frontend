@@ -14,15 +14,14 @@ class Item extends SpriteComponent
   @override
   FutureOr<void> onLoad() async {
     super.onLoad();
-    sprite = await gameRef.loadSprite('burger.png');
-    add(RectangleHitbox(size: size));
+    add(RectangleHitbox(size: size)); // Add collision detection
   }
 
   @override
   void update(double dt) {
     super.update(dt);
     if (isCarried && carrier != null) {
-      position = carrier!.position + Vector2(0, 20);
+      position = carrier!.position + Vector2(0, 20); // Follow the carrier
     }
   }
 
