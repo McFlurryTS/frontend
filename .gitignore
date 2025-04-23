@@ -59,3 +59,8 @@ android/.idea/modules.xml
 android/.idea/misc.xml
 android/.idea/vcs.xml
 android/.idea/gradle.xml
+
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral
+macos/Flutter/Flutter.framework
+macos/Flutter/App.framework

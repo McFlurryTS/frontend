@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flame/game.dart';
+import 'package:demo/game/burger_game.dart';
 
 class GameScreen extends StatelessWidget {
   final TabController tabController; // Recibe el TabController
@@ -15,20 +17,8 @@ class GameScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Game Screen', style: TextStyle(fontSize: 24)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                tabController.animateTo(0); // Cambia al índice de HomeScreen
-                currentIndexNotifier.value =
-                    0; // Actualiza el índice del CurvedNavigationBar
-              },
-              child: const Text('Back to Home'),
-            ),
-          ],
+        child: GameWidget(
+          game: BurgerGame(), // Embed the FlameGame here
         ),
       ),
     );
