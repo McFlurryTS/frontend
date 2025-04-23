@@ -1,8 +1,8 @@
-import 'package:demo/game/sprites/player_character.dart';
+import 'package:McDonalds/game/sprites/player_character.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
-import 'package:demo/game/world/game_world.dart';
+import 'package:McDonalds/game/world/game_world.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

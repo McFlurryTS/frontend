@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
-import 'package:demo/game/burger_game.dart';
+import 'package:McDonalds/game/burger_game.dart';
 
 class GameScreen extends StatelessWidget {
   final TabController tabController; // Recibe el TabController

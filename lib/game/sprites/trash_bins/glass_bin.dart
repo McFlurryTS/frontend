@@ -1,4 +1,4 @@
-import 'package:demo/game/sprites/trash_bins/recycle_bin.dart';
+import 'package:McDonalds/game/sprites/trash_bins/recycle_bin.dart';
 import 'package:flame/components.dart';
 
 class GlassBin extends RecycleBin {

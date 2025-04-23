@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:demo/game/sprites/burger.dart';
-import 'package:demo/game/sprites/fries.dart';
-import 'package:demo/game/sprites/soda.dart';
-import 'package:demo/game/background/background.dart';
-import 'package:demo/game/sprites/trash_bins/glass_bin.dart';
-import 'package:demo/game/sprites/trash_bins/metal_bin.dart';
-import 'package:demo/game/sprites/trash_bins/organic_bin.dart';
-import 'package:demo/game/sprites/trash_bins/plastic_bin.dart';
+import 'package:McDonalds/game/sprites/burger.dart';
+import 'package:McDonalds/game/sprites/fries.dart';
+import 'package:McDonalds/game/sprites/soda.dart';
+import 'package:McDonalds/game/background/background.dart';
+import 'package:McDonalds/game/sprites/trash_bins/glass_bin.dart';
+import 'package:McDonalds/game/sprites/trash_bins/metal_bin.dart';
+import 'package:McDonalds/game/sprites/trash_bins/organic_bin.dart';
+import 'package:McDonalds/game/sprites/trash_bins/plastic_bin.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 

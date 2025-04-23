@@ -1,7 +1,7 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:demo/game/sprites/item.dart';
+import 'package:McDonalds/game/sprites/item.dart';
 
 class Player extends SpriteComponent
     with HasGameRef<FlameGame>, CollisionCallbacks {
@@ -25,7 +25,8 @@ class Player extends SpriteComponent
   void update(double dt) {
     super.update(dt);
     // Add player-specific logic here (e.g., movement)
-    if (closestItem != null && position.distanceTo(closestItem!.position) > detectionRadius) {
+    if (closestItem != null &&
+        position.distanceTo(closestItem!.position) > detectionRadius) {
       closestItem = null;
     }
     if (joystick != null) {
