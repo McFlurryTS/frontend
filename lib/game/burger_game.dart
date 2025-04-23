@@ -1,3 +1,4 @@
+import 'package:demo/game/sprites/player_character.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
@@ -6,8 +7,9 @@ import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class BurgerGame extends FlameGame with HasCollisionDetection{
+class BurgerGame extends FlameGame with HasCollisionDetection {
   late GameWorld gameWorld;
+  late Player player;
 
   @override
   Future<void> onLoad() async {
@@ -20,9 +22,14 @@ class BurgerGame extends FlameGame with HasCollisionDetection{
     await add(gameWorld);
     await gameWorld.loaded;
 
-    this.camera = CameraComponent(world: gameWorld)
+    player = Player();
+    add(player);
+    player.position = Vector2(256, 256);
+    gameWorld.add(player);
+
+    camera = CameraComponent(world: gameWorld)
       ..viewfinder.anchor = Anchor.center;
-    this.camera.follow(gameWorld.player);
+    camera.follow(player);
 
     final joystick = JoystickComponent(
       knob: CircleComponent(
@@ -32,23 +39,24 @@ class BurgerGame extends FlameGame with HasCollisionDetection{
       background: CircleComponent(
         radius: 50,
         paint: Paint()..color = const Color(0x77CCCCCC),
+        priority: 10,
       ),
       margin: const EdgeInsets.only(left: 20, bottom: 20),
     );
-    add(joystick);
+    camera.viewport.add(joystick);
 
     final button = HudButtonComponent(
       button: CircleComponent(
-        radius: 40,
+        radius: 50,
         paint: Paint()..color = const Color(0x77DDDDDD),
       ),
-      margin: const EdgeInsets.only(right: 20, bottom:20),
+      margin: const EdgeInsets.only(right: 20, bottom: 20),
       onPressed: () {
-        gameWorld.player.interactWithClosestItem();
+        player.interactWithClosestItem();
       },
     );
-    add(button);
+    camera.viewport.add(button);
 
-    gameWorld.player.joystick = joystick;
+    player.joystick = joystick;
   }
 }
