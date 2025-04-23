@@ -70,6 +70,11 @@ flutter:
     - assets/images/soda.png
     - assets/images/mcflurry.png
     - assets/images/beach.gif
+    - assets/images/trash_bins/
+    - assets/images/trash_bins/organic_bin.png
+    - assets/images/trash_bins/metal_bin.png
+    - assets/images/trash_bins/plastic_bin.png
+    - assets/images/trash_bins/glass_bin.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
