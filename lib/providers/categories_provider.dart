@@ -13,20 +13,21 @@ class CategoriesProvider with ChangeNotifier {
 
   // Categorías desde el JSON
   static const List<Map<String, String>> categoryDefinitions = [
-    {'id': 'PROMOCIONES', 'name': 'Promociones'}, // Mover promociones al inicio
+    {'id': 'PROMOCIONES', 'name': 'Promociones'},
     {'id': 'DESAYUNOS', 'name': 'Desayunos'},
     {'id': 'A_LA_CARTA_PAPAS', 'name': 'Papas a la carta'},
     {'id': 'A_LA_CARTA_HAMBURGUESAS', 'name': 'Hamburguesas a la carta'},
     {'id': 'A_LA_CARTA_NUGGETS', 'name': 'Nuggets a la carta'},
     {'id': 'BEBIDAS', 'name': 'Bebidas'},
-    {'id': 'TU_FAV_99', 'name': 'Tu Fav x \$99'},
-    {'id': 'FAMILY_BOX', 'name': 'Family Box'},
-    {'id': 'POSTRES_Y_MALTEADAS', 'name': 'Postres y Malteadas'},
     {'id': 'CAJITA_FELIZ', 'name': 'Cajita Feliz'},
-    {'id': 'EXCLUSIVO_PICKUP', 'name': 'Exclusivo Pickup'},
-    {'id': 'MCTRIOS_MEDIANOS', 'name': 'McTríos Medianos'},
-    {'id': 'MCTRIOS_GRANDES', 'name': 'McTríos Grandes'},
+    {'id': 'EXCLUSIVOS_PICKUP', 'name': 'Exclusivo Pickup'},
+    {'id': 'FAMILY_BOX', 'name': 'Family Box'},
+    {'id': 'MCTRIO_MEDIANO', 'name': 'McTríos Medianos'},
+    {'id': 'MCTRIO_GRANDE', 'name': 'McTríos Grandes'},
     {'id': 'MCTRIO_3X3', 'name': 'McTrío 3x3'},
+    {'id': 'POSTRES_Y_MALTEADAS', 'name': 'Postres y Malteadas'},
+    {'id': 'TU_FAV_99', 'name': 'Tu Fav x \$99 pesos'},
+    {'id': 'A_LA_CARTA_COMIDA', 'name': 'A la Carta Comida'},
   ];
 
   Future<void> generateCategoriesFromProducts(

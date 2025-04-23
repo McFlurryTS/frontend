@@ -8,7 +8,7 @@ class SurveyService {
   static Future<bool> submitSurvey(Survey survey) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/mcdonalds-survey'),
+        Uri.parse('$baseUrl/api/answers'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(survey.toJson()),
       );

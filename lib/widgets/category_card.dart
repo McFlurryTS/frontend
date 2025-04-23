@@ -68,7 +68,7 @@ class _CategoryCardState extends State<CategoryCard>
             ),
         child: Container(
           width: 168,
-          height: 180,
+          height: 165, // Reducido de 180 a 165
           decoration: BoxDecoration(
             color: widget.category.color,
             borderRadius: BorderRadius.circular(25),
@@ -78,7 +78,7 @@ class _CategoryCardState extends State<CategoryCard>
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10), // Reducido de 12 a 10
                   child: OptimizedImage(
                     imageUrl: widget.category.imageUrl,
                     fit: BoxFit.contain,
@@ -106,11 +106,16 @@ class _CategoryCardState extends State<CategoryCard>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                padding: const EdgeInsets.fromLTRB(
+                  8,
+                  0,
+                  8,
+                  10,
+                ), // Reducido padding inferior de 12 a 10
                 child: Text(
                   widget.category.name,
                   style: GoogleFonts.inter(
-                    fontSize: 22,
+                    fontSize: 20, // Reducido de 22 a 20
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.2,
                     color: Colors.black87,

@@ -4,23 +4,39 @@ import 'package:provider/provider.dart';
 import 'package:McDonalds/models/product_model.dart';
 import 'package:McDonalds/providers/products_provider.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:McDonalds/providers/cart_provider.dart';
 import 'package:McDonalds/widgets/optimized_image.dart';
+import 'package:McDonalds/widgets/cart_button.dart';
+import 'package:McDonalds/models/cart_item_model.dart';
+import 'package:McDonalds/widgets/confirmation_dialog.dart';
+import 'package:McDonalds/widgets/cart_confirmation_dialog.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
+  final TabController? tabController;
+  final ValueNotifier<int>? currentIndexNotifier;
+  final CartItem? cartItem; // Nuevo parámetro para edición
 
-  const ProductDetailScreen({super.key, required this.product});
+  const ProductDetailScreen({
+    super.key,
+    required this.product,
+    this.tabController,
+    this.currentIndexNotifier,
+    this.cartItem, // Agregar a constructor
+  });
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends State<ProductDetailScreen>
+    with SingleTickerProviderStateMixin {
   int quantity = 1;
-  // Cambiar a Map<String, Set<String>> para permitir múltiples selecciones por categoría
   final Map<String, Set<String>> selectedProducts = {};
+  late AnimationController _animationController;
+  final GlobalKey _cartIconKey = GlobalKey();
+  final GlobalKey _productImageKey = GlobalKey();
+  bool get isEditing => widget.cartItem != null;
 
   final Map<String, List<String>> recommendedCategoriesMap = {
     'BEBIDAS': ['POSTRES_Y_MALTEADAS', 'FAMILY_BOX'],
@@ -53,7 +69,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
     _loadRecommendedProducts();
+
+    // Inicializar con datos del carrito si estamos editando
+    if (isEditing) {
+      quantity = widget.cartItem!.quantity;
+      selectedProducts.addAll(
+        Map<String, Set<String>>.from(widget.cartItem!.selectedExtras),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void _loadRecommendedProducts() {
@@ -65,13 +99,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   void _handleProductTap(String category, String productId) {
     setState(() {
-      // Inicializar el set si no existe
       selectedProducts[category] ??= {};
-
-      // Toggle: si ya está seleccionado lo quita, si no lo agrega
       if (selectedProducts[category]!.contains(productId)) {
         selectedProducts[category]!.remove(productId);
-        // Si el set queda vacío, eliminar la categoría
         if (selectedProducts[category]!.isEmpty) {
           selectedProducts.remove(category);
         }
@@ -81,39 +111,129 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
-  void _addToCart() {
-    if (selectedProducts.isNotEmpty) {
+  void _addToCartWithAnimation() async {
+    final RenderBox? productBox =
+        _productImageKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? cartBox =
+        _cartIconKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (productBox != null && cartBox != null) {
+      final productPos = productBox.localToGlobal(Offset.zero);
+      final cartPos = cartBox.localToGlobal(Offset.zero);
+
+      final overlay = OverlayEntry(
+        builder: (context) {
+          return AnimatedBuilder(
+            animation: _animationController,
+            builder: (_, child) {
+              final curveValue = Curves.easeInOut.transform(
+                _animationController.value,
+              );
+              return Positioned(
+                left: productPos.dx + (cartPos.dx - productPos.dx) * curveValue,
+                top: productPos.dy + (cartPos.dy - productPos.dy) * curveValue,
+                child: Transform.scale(
+                  scale: 1.0 - curveValue * 0.7,
+                  child: Opacity(
+                    opacity: 1.0 - curveValue * 0.5,
+                    child: SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: _buildProductImage(
+                        widget.product.image,
+                        isCircular: true,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+
+      Overlay.of(context).insert(overlay);
+      await _animationController.forward();
+      overlay.remove();
+      _animationController.reset();
+
       Provider.of<CartProvider>(
         context,
         listen: false,
       ).addItem(widget.product, quantity, selectedProducts);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Producto agregado al carrito')),
-      );
+
+      if (mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => CartConfirmationDialog(
+                tabController: widget.tabController,
+                currentIndexNotifier: widget.currentIndexNotifier,
+              ),
+        );
+      }
+    }
+  }
+
+  Future<bool> _confirmSaveChanges(BuildContext context) async {
+    return await showConfirmationDialog(
+      context: context,
+      title: '¿Desea continuar con los cambios?',
+      subtitle: 'Los cambios se aplicarán a tu pedido.',
+      confirmText: 'Continuar',
+      icon: Icons.edit,
+    );
+  }
+
+  void _handleSaveChanges(BuildContext context) async {
+    if (await _confirmSaveChanges(context)) {
+      final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
+      // Siempre usar el ID original para actualizar
+      if (widget.cartItem != null) {
+        final originalItemId = widget.cartItem!.getItemId();
+        cartProvider.updateItem(
+          originalItemId,
+          widget.product,
+          quantity,
+          selectedProducts,
+        );
+      } else {
+        cartProvider.addItem(widget.product, quantity, selectedProducts);
+      }
+
+      // Navegar de vuelta
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
   double get totalPrice {
-    double basePrice = widget.product.price;
+    final provider = Provider.of<ProductsProvider>(context, listen: false);
+    return calculateTotal(provider);
+  }
+
+  double calculateTotal(ProductsProvider provider) {
+    double basePrice = widget.product.price * quantity;
     double extrasTotal = 0.0;
 
     for (final entry in selectedProducts.entries) {
-      final products = Provider.of<ProductsProvider>(
-        context,
-        listen: false,
-      ).getProductsByCategory(entry.key);
+      final category = entry.key;
+      final productIds = entry.value;
+      final products = provider.getProductsByCategory(category);
 
-      // Sumar el precio de todos los productos seleccionados en la categoría
-      for (final productId in entry.value) {
-        final selectedProduct = products.firstWhere(
+      for (final productId in productIds) {
+        final extraProduct = products.firstWhere(
           (p) => p.id == productId,
           orElse: () => widget.product,
         );
-        extrasTotal += selectedProduct.price;
+        extrasTotal += extraProduct.price;
       }
     }
 
-    return (basePrice + extrasTotal) * quantity;
+    return basePrice + (extrasTotal * quantity);
   }
 
   Widget _buildProductImage(String imageUrl, {bool isCircular = false}) {
@@ -173,7 +293,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 140, // Altura fija para todos los sliders
+              height: 140,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: products.length,
@@ -184,7 +304,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       selectedProducts[category]?.contains(product.id) ?? false;
 
                   return Container(
-                    width: 100, // Ancho fijo para todos los items
+                    width: 100,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -192,8 +312,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         GestureDetector(
                           onTap: () => _handleProductTap(category, product.id),
                           child: Container(
-                            width: 70, // Reducido de 85 a 70
-                            height: 70, // Reducido de 85 a 70
+                            width: 70,
+                            height: 70,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
@@ -205,8 +325,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                             ),
                             child: Stack(
-                              clipBehavior:
-                                  Clip.none, // Añadido para controlar overflow
+                              clipBehavior: Clip.none,
                               children: [
                                 ClipOval(
                                   child: Center(
@@ -218,8 +337,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         fit: BoxFit.contain,
                                         width: 60,
                                         height: 60,
-                                        cacheWidth:
-                                            120, // 2x el tamaño para pantallas de alta densidad
+                                        cacheWidth: 120,
                                         cacheHeight: 120,
                                         enableBlur: true,
                                         placeholder: Container(
@@ -254,7 +372,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       ),
                                       child: const Icon(
                                         Icons.check,
-                                        size: 14, // Reducido de 16 a 14
+                                        size: 14,
                                         color: Colors.black,
                                       ),
                                     ),
@@ -313,89 +431,127 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Scaffold(
       backgroundColor: RocketColors.background,
       appBar: AppBar(
-        backgroundColor: RocketColors.background,
-        foregroundColor: RocketColors.text,
+        backgroundColor: RocketColors.secondary,
+        foregroundColor: Colors.white,
         elevation: 0,
+        actions: [CartButton(key: _cartIconKey), const SizedBox(width: 8)],
       ),
-      body: Skeletonizer(
-        enabled: false,
-        containersColor: Colors.grey[300],
-        effect: ShimmerEffect(
-          baseColor: Colors.grey[400]!,
-          highlightColor: Colors.grey[200]!,
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                product.name,
-                style: GoogleFonts.poppins(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '\$${product.price.toStringAsFixed(0)}',
-                style: GoogleFonts.roboto(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.9,
-                ),
-              ),
-              const SizedBox(height: 2),
-              // Contenedor centrado para imagen, título y controles
-              Center(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: 280, // Ancho fijo para la imagen
-                      height: 280, // Alto fijo para la imagen
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildProductImage(product.image),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    SizedBox(
-                      width: 280, // Mismo ancho que la imagen
-                      child: Text(
-                        product.name,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildQuantitySelector(),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              if (!hasAnyRelated)
+      body: Consumer<ProductsProvider>(
+        builder: (context, provider, _) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  "No hay acompañamientos ni productos relacionados.",
-                  style: RocketTextStyles.body.copyWith(color: Colors.grey),
+                  product.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              for (final cat in categories) buildCircleProductSlider(cat),
-              const SizedBox(height: 16),
-              _buildAllergenSection(product),
-              Text(
-                "Total: \$${totalPrice.toStringAsFixed(0)}",
-                style: RocketTextStyles.headline2.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 8),
+                Text(
+                  '\$${product.price.toStringAsFixed(0)}',
+                  style: GoogleFonts.roboto(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.9,
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                Center(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 280,
+                        height: 280,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: RepaintBoundary(
+                            key: _productImageKey,
+                            child: _buildProductImage(product.image),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          product.description,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Center(child: _buildQuantitySelector()),
+                const SizedBox(height: 32),
+                if (!hasAnyRelated)
+                  Text(
+                    "No hay acompañamientos ni productos relacionados.",
+                    style: RocketTextStyles.body.copyWith(color: Colors.grey),
+                  ),
+                for (final cat in categories) buildCircleProductSlider(cat),
+                const SizedBox(height: 16),
+                _buildAllergenSection(product),
+                const SizedBox(height: 16),
+                Text(
+                  "Total: \$${totalPrice.toStringAsFixed(0)}",
+                  style: RocketTextStyles.headline2.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: RocketColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: Material(
+        color: RocketColors.primary,
+        child: InkWell(
+          onTap:
+              () =>
+                  isEditing
+                      ? _handleSaveChanges(context)
+                      : _addToCartWithAnimation(),
+          splashColor: Colors.black12,
+          highlightColor: Colors.black12,
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isEditing ? 'Guardar cambios' : 'Agregar al carrito',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '\$${totalPrice.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
@@ -411,21 +567,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
-            icon: const Icon(Icons.remove),
+            icon: Icon(
+              Icons.remove,
+              color: quantity > 1 ? Colors.black : Colors.grey,
+            ),
+            onPressed: () {
+              if (quantity > 1) {
+                setState(() => quantity--);
+              }
+            },
           ),
           const SizedBox(width: 14),
           Text(
-            '$quantity',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            quantity.toString(),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 14),
           IconButton(
-            onPressed: () => setState(() => quantity++),
             icon: const Icon(Icons.add),
+            onPressed: () => setState(() => quantity++),
           ),
         ],
       ),
@@ -444,8 +604,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         const SizedBox(height: 10),
         if (product.allergens.isEmpty)
           Text(
-            "No contiene alérgenos importantes.",
-            style: RocketTextStyles.body,
+            'No se encontró información de alérgenos.',
+            style: TextStyle(color: Colors.grey[600]),
           )
         else
           Wrap(
@@ -460,48 +620,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
-                      border: Border.all(color: Colors.grey[400]!),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       allergen,
-                      style: RocketTextStyles.body.copyWith(
-                        fontSize: 14,
-                        color: RocketColors.text,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[800]),
                     ),
                   );
                 }).toList(),
           ),
         const SizedBox(height: 16),
       ],
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Material(
-      color: RocketColors.primary,
-      child: InkWell(
-        onTap: _addToCart,
-        splashColor: Colors.black12,
-        highlightColor: Colors.black12,
-        child: Container(
-          width: double.infinity,
-          height: 78,
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Añadir al carrito', style: RocketTextStyles.button2),
-              Text(
-                '\$${totalPrice.toStringAsFixed(0)}',
-                style: RocketTextStyles.button2,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:McDonalds/widgets/product_card.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:McDonalds/widgets/cart_button.dart';
 
 class CategoryScreen extends StatefulWidget {
   final String categoryId;
@@ -72,6 +73,7 @@ class _CategoryScreenState extends State<CategoryScreen>
         backgroundColor: const Color(0xFFDA291C),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: const [CartButton(), SizedBox(width: 8)],
       ),
       body: Consumer<ProductsProvider>(
         builder: (context, provider, _) {

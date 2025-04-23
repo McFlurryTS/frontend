@@ -54,50 +54,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ),
-                    title: Row(
+                    title: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.white24,
-                          child:
-                              user?.photoUrl != null
-                                  ? ClipOval(
-                                    child: Image.network(
-                                      user!.photoUrl!,
-                                      width: 40,
-                                      height: 40,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                  : const Icon(
-                                    Icons.person,
-                                    size: 24,
-                                    color: Colors.white,
-                                  ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              user?.name ?? 'Usuario',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.white24,
+                              child:
+                                  user?.photoUrl != null
+                                      ? ClipOval(
+                                        child: Image.network(
+                                          user!.photoUrl!,
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                      : const Icon(
+                                        Icons.person,
+                                        size: 24,
+                                        color: Colors.white,
+                                      ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user?.name ?? 'Usuario',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (user?.email != null)
+                                    Text(
+                                      user!.email!,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white70,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
                               ),
                             ),
-                            if (user?.email != null)
-                              Text(
-                                user!.email!,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white70,
-                                ),
-                              ),
                           ],
                         ),
                       ],
+                    ),
+                    centerTitle: true,
+                    titlePadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
                     ),
                   ),
                 ),
@@ -193,7 +208,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildRewardsCard() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: 20,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Colors.amber[700]!, Colors.amber[600]!],
@@ -215,12 +233,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'MyMcDonald\'s Rewards',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Flexible(
+                child: const Text(
+                  'MyMcDonald\'s Rewards',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
@@ -233,6 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.star, size: 16, color: Colors.white),
                     SizedBox(width: 4),
@@ -274,50 +296,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'icon': Icons.receipt_long,
         'label': 'Pedidos',
         'color': const Color(0xFF2196F3), // Color azul fijo
-      },
-      {
-        'icon': Icons.favorite,
-        'label': 'Favoritos',
-        'color': const Color(0xFFE57373), // Color rojo claro fijo
+        'onTap': () => Navigator.pushNamed(context, '/orders'),
       },
       {
         'icon': Icons.location_on,
         'label': 'Direcciones',
         'color': const Color(0xFF66BB6A), // Color verde fijo
+        'onTap': () {}, // TODO: Implementar navegación a direcciones
       },
       {
         'icon': Icons.payment,
         'label': 'Pagos',
         'color': const Color(0xFF9575CD), // Color morado fijo
+        'onTap': () {}, // TODO: Implementar navegación a pagos
       },
     ];
 
     return SizedBox(
-      height: 100,
+      height: MediaQuery.of(context).size.height * 0.15,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: actions.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 16),
+        separatorBuilder:
+            (context, index) =>
+                SizedBox(width: MediaQuery.of(context).size.width * 0.04),
         itemBuilder: (context, index) {
           final action = actions[index];
           final Color color = action['color'] as Color;
 
           return Column(
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+              GestureDetector(
+                onTap: action['onTap'] as VoidCallback,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.15,
+                  height: MediaQuery.of(context).size.width * 0.15,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      action['icon'] as IconData,
+                      color: color,
+                      size: MediaQuery.of(context).size.width * 0.07,
+                    ),
+                  ),
                 ),
-                child: Icon(action['icon'] as IconData, color: color, size: 28),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
               Text(
                 action['label'] as String,
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.03,
+                  color: Colors.grey[700],
+                ),
               ),
             ],
           );
@@ -364,7 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildInfoCard(user) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -381,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (user.phoneNumber != null)
             _buildInfoRow(Icons.phone, 'Teléfono', user.phoneNumber!),
           if (user.address != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             _buildInfoRow(
               Icons.location_on,
               'Dirección de Entrega',

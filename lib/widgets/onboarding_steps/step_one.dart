@@ -19,23 +19,61 @@ class StepOne extends StatelessWidget {
               style: RocketTextStyles.headline2.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  NotificationService.getFavoriteProducts().map((product) {
-                    final isSelected = provider.isOptionSelected(0, product);
-                    if (isSelected) {
-                      NotificationService.subscribeToTopic(product);
-                    } else {
-                      NotificationService.unsubscribeFromTopic(product);
-                    }
-                    return _buildOptionCard(
-                      text: product,
-                      isSelected: isSelected,
-                      onTap: () => provider.toggleOption(0, product),
-                    );
-                  }).toList(),
+            FutureBuilder<List<String>>(
+              future: NotificationService.getFavoriteProducts(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                    child: Text('No hay productos disponibles'),
+                  );
+                }
+
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      snapshot.data!.map((product) {
+                        final isSelected = provider.isOptionSelected(
+                          0,
+                          product,
+                        );
+
+                        return _buildOptionCard(
+                          text: product,
+                          isSelected: isSelected,
+                          onTap: () async {
+                            provider.toggleOption(0, product);
+                            try {
+                              if (isSelected) {
+                                await NotificationService.unsubscribeFromTopic(
+                                  product,
+                                );
+                              } else {
+                                await NotificationService.subscribeToTopic(
+                                  product,
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error al actualizar las notificaciones: $e',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        );
+                      }).toList(),
+                );
+              },
             ),
           ],
         );
@@ -65,7 +103,7 @@ class StepOne extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: isSelected ? Colors.black : Colors.grey[600],
+              color: isSelected ? Colors.white : Colors.grey[600],
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),

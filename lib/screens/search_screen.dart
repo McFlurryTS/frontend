@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:diacritic/diacritic.dart';
 import 'package:McDonalds/widgets/product_menu_card.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:McDonalds/widgets/cart_button.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -143,6 +144,12 @@ class _SearchScreenState extends State<SearchScreen>
 
         return Scaffold(
           backgroundColor: RocketColors.background,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: BackButton(color: RocketColors.text),
+            actions: const [CartButton(), SizedBox(width: 8)],
+          ),
           body: SafeArea(
             child: Column(
               children: [

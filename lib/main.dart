@@ -4,6 +4,7 @@ import 'package:McDonalds/providers/survey_provider.dart';
 import 'package:McDonalds/providers/user_provider.dart';
 import 'package:McDonalds/screens/category_screen.dart';
 import 'package:McDonalds/screens/menu_screen.dart';
+import 'package:McDonalds/screens/orders_history_screen.dart';
 import 'package:McDonalds/screens/product_detail_screen.dart';
 import 'package:McDonalds/screens/profile_screen.dart';
 import 'package:McDonalds/screens/search_screen.dart';
@@ -26,12 +27,20 @@ import 'package:McDonalds/models/survey_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:McDonalds/services/notification_service.dart';
+import 'package:McDonalds/services/navigation_service.dart';
 import 'package:McDonalds/screens/about_screen.dart';
 import 'package:McDonalds/screens/help_screen.dart';
 import 'package:McDonalds/screens/privacy_screen.dart';
+import 'package:McDonalds/screens/cart_screen.dart';
+import 'package:McDonalds/models/cart_item_model.dart'; // Agregar esta importación
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:McDonalds/screens/location_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar timezone
+  tz.initializeTimeZones();
 
   // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -61,72 +70,118 @@ class MyMcApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => CategoriesProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProxyProvider<ProductsProvider, CartProvider>(
+          create:
+              (context) => CartProvider(
+                Provider.of<ProductsProvider>(context, listen: false),
+                context,
+              ),
+          update:
+              (context, productsProvider, previous) =>
+                  previous ?? CartProvider(productsProvider, context),
+        ),
         ChangeNotifierProvider(create: (_) => SurveyProvider()),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
-      child: const MyApp(),
-    );
-  }
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'McDonald\'s App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: RocketColors.primary,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: RocketColors.background,
-        appBarTheme: AppBarTheme(
-          backgroundColor: RocketColors.secondary,
-          titleTextStyle: RocketTextStyles.headline2.copyWith(
-            color: Colors.white,
+      child: MaterialApp(
+        navigatorKey: NavigationService.navigatorKey,
+        title: 'McDonalds',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: RocketColors.primary,
+            brightness: Brightness.light,
+          ),
+          scaffoldBackgroundColor: RocketColors.background,
+          appBarTheme: AppBarTheme(
+            backgroundColor: RocketColors.secondary,
+            titleTextStyle: RocketTextStyles.headline2.copyWith(
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      home: Consumer<OnboardingProvider>(
-        builder: (context, onboardingProvider, child) {
-          return Stack(
-            children: [
-              const MainApp(),
-              if (!onboardingProvider.isCompleted) const OnboardingOverlay(),
-            ],
-          );
+        home: Consumer<OnboardingProvider>(
+          builder: (context, onboardingProvider, child) {
+            if (!onboardingProvider.isInitialized) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final location = StorageService.getLocation();
+            if (!onboardingProvider.isCompleted) {
+              return Stack(
+                children: [const MainApp(), const OnboardingOverlay()],
+              );
+            } else if (location == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LocationScreen()),
+                );
+              });
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return const MainApp();
+          },
+        ),
+        onGenerateRoute: (RouteSettings settings) {
+          switch (settings.name) {
+            case '/search':
+              return MaterialPageRoute(builder: (_) => const SearchScreen());
+            case '/menu':
+              return MaterialPageRoute(builder: (_) => const MenuScreen());
+            case '/category':
+              final categoryId = settings.arguments as String;
+              return MaterialPageRoute(
+                builder: (_) => CategoryScreen(categoryId: categoryId),
+              );
+            case '/product_detail':
+              final mainAppState =
+                  context.findAncestorStateOfType<MainAppState>();
+
+              // Si los argumentos vienen como un Map, es una edición desde el carrito
+              if (settings.arguments is Map) {
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder:
+                      (_) => ProductDetailScreen(
+                        product: args['product'] as Product,
+                        cartItem: args['cartItem'] as CartItem,
+                        tabController: mainAppState?.tabController,
+                        currentIndexNotifier:
+                            mainAppState?.currentIndexNotifier,
+                      ),
+                );
+              }
+
+              // Si no, es una navegación normal desde el menú o búsqueda
+              final product = settings.arguments as Product;
+              return MaterialPageRoute(
+                builder:
+                    (_) => ProductDetailScreen(
+                      product: product,
+                      tabController: mainAppState?.tabController,
+                      currentIndexNotifier: mainAppState?.currentIndexNotifier,
+                    ),
+              );
+            case '/privacy':
+              return MaterialPageRoute(builder: (_) => const PrivacyScreen());
+            case '/help':
+              return MaterialPageRoute(builder: (_) => const HelpScreen());
+            case '/about':
+              return MaterialPageRoute(builder: (_) => const AboutScreen());
+            case '/cart':
+              return MaterialPageRoute(builder: (_) => const CartScreen());
+            case '/orders':
+              return MaterialPageRoute(
+                builder: (_) => const OrdersHistoryScreen(),
+              );
+            default:
+              return null;
+          }
         },
       ),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/search':
-            return MaterialPageRoute(builder: (_) => const SearchScreen());
-          case '/menu':
-            return MaterialPageRoute(builder: (_) => const MenuScreen());
-          case '/category':
-            final categoryId = settings.arguments as String;
-            return MaterialPageRoute(
-              builder: (_) => CategoryScreen(categoryId: categoryId),
-            );
-          case '/product_detail':
-            final product = settings.arguments as Product;
-            return MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(product: product),
-            );
-          case '/privacy':
-            return MaterialPageRoute(builder: (_) => const PrivacyScreen());
-          case '/help':
-            return MaterialPageRoute(builder: (_) => const HelpScreen());
-          case '/about':
-            return MaterialPageRoute(builder: (_) => const AboutScreen());
-          default:
-            return null;
-        }
-      },
     );
   }
 }
@@ -134,14 +189,17 @@ class MyApp extends StatelessWidget {
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
   @override
-  State<MainApp> createState() => _MainAppState();
+  State<MainApp> createState() => MainAppState();
 }
 
-class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
+class MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(0);
   late List<Widget> _screens;
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(true);
+
+  TabController get tabController => _tabController;
+  ValueNotifier<int> get currentIndexNotifier => _currentIndexNotifier;
 
   @override
   void initState() {
@@ -150,7 +208,7 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
       Provider.of<SurveyProvider>(context, listen: false).init();
       // No es necesario llamar a init() ya que OnboardingProvider se inicializa en su constructor
     });
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_handleTabChange);
     _screens = [
       const HomeScreen(),
@@ -159,7 +217,6 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
         tabController: _tabController,
         currentIndexNotifier: _currentIndexNotifier,
       ),
-      const Center(child: Text('Pedidos')),
       const ProfileScreen(),
       const DemoScreen(),
     ];
@@ -219,7 +276,7 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 6,
+      length: 5,
       child: Stack(
         children: [
           Scaffold(
@@ -239,9 +296,8 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
                     _buildNavIcon(currentIndex, 0, Icons.home),
                     _buildNavIcon(currentIndex, 1, Icons.auto_fix_high),
                     _buildNavIcon(currentIndex, 2, Icons.gamepad),
-                    _buildNavIcon(currentIndex, 3, Icons.shopping_bag),
-                    _buildNavIcon(currentIndex, 4, Icons.person),
-                    _buildNavIcon(currentIndex, 5, Icons.developer_mode),
+                    _buildNavIcon(currentIndex, 3, Icons.person),
+                    _buildNavIcon(currentIndex, 4, Icons.developer_mode),
                   ],
                   onTap: (index) {
                     _tabController.index = index;

@@ -51,9 +51,7 @@ class Product extends HiveObject {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id:
-          json['id']
-              .toString(), // Convertir a String para garantizar compatibilidad
+      id: json['id'].toString(),
       category: json['category'] as String,
       name: json['name'] as String,
       description: json['description'] ?? '',
@@ -71,5 +69,20 @@ class Product extends HiveObject {
               ? List<String>.from(json['allergens'])
               : const [],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'category': category,
+      'name': name,
+      'description': description,
+      'image': image,
+      'country': country,
+      'active': active,
+      'updated_at': updated_at.toIso8601String(),
+      'price': price,
+      'allergens': allergens,
+    };
   }
 }

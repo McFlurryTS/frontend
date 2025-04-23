@@ -13,6 +13,7 @@ import 'package:McDonalds/widgets/category_card.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:McDonalds/widgets/cart_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,26 +42,30 @@ class _HomeScreenState extends State<HomeScreen> {
       listen: false,
     );
 
-    if (!productsProvider.isInitialized) {
-      await productsProvider.fetchMenuCompleto();
+    try {
+      if (!productsProvider.isInitialized) {
+        await productsProvider.fetchMenuCompleto();
 
-      if (mounted &&
-          !productsProvider.hasError &&
-          categoriesProvider.categories.isEmpty) {
-        await categoriesProvider.generateCategoriesFromProducts(
-          productsProvider,
-        );
+        if (mounted &&
+            !productsProvider.hasError &&
+            categoriesProvider.categories.isEmpty) {
+          await categoriesProvider.generateCategoriesFromProducts(
+            productsProvider,
+          );
+        }
+
+        if (mounted) {
+          _preloadImagesForHome(productsProvider, categoriesProvider);
+        }
       }
-
+    } catch (e) {
+      debugPrint('Error inicializando datos: $e');
+    } finally {
       if (mounted) {
-        _preloadImagesForHome(productsProvider, categoriesProvider);
+        setState(() {
+          _isFirstLoad = false;
+        });
       }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isFirstLoad = false;
-      });
     }
   }
 
@@ -106,7 +111,29 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, productsProvider, categoriesProvider, _) {
         final bool isLoading =
             (productsProvider.isLoading || categoriesProvider.isLoading) &&
-            _isFirstLoad;
+                _isFirstLoad;
+
+        if (productsProvider.hasError && !isLoading) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  productsProvider.error ?? 'Error al cargar los datos',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => productsProvider.retryLoading(),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -142,11 +169,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   slivers: [
                     SliverAppBar(
-                      expandedHeight: 170,
+                      expandedHeight: 160, // Reducido de 170 a 160
                       floating: false,
                       pinned: true,
                       stretch: true,
                       backgroundColor: const Color(0xFFDA291C),
+                      actions: const [CartButton(), SizedBox(width: 8)],
                       flexibleSpace: LayoutBuilder(
                         builder: (
                           BuildContext context,
@@ -155,8 +183,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           final top = constraints.biggest.height;
                           final collapsedHeight =
                               MediaQuery.of(context).padding.top +
-                              kToolbarHeight;
-                          final expandedHeight = 170.0;
+                                  kToolbarHeight;
+                          final expandedHeight = 160.0; // Ajustado a 160
                           final fraction = ((top - collapsedHeight) /
                                   (expandedHeight - collapsedHeight))
                               .clamp(0.0, 1.0);
@@ -179,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   'McDonald\'s',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 20,
+                                    fontSize: 18, // Reducido de 20 a 18
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -214,19 +242,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                             CrossAxisAlignment.start,
                                         children: const [
                                           Text(
-                                            'Welcome Back! 👋',
+                                            'Bienvenida de vuelta! Fernanda',
                                             style: TextStyle(
                                               color: Colors.white,
-                                              fontSize: 24,
+                                              fontSize:
+                                                  22, // Reducido de 24 a 22
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          SizedBox(height: 5),
+                                          SizedBox(
+                                            height: 4,
+                                          ), // Reducido de 5 a 4
                                           Text(
                                             'OBTÉN UN DESCUENTO EN LO QUE MÁS TE GUSTA',
                                             style: TextStyle(
                                               color: Colors.white70,
-                                              fontSize: 14,
+                                              fontSize:
+                                                  11, // Reducido de 12 a 11
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -289,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
         CarouselSlider.builder(
           itemCount: randomPromotions.length,
           options: CarouselOptions(
-            height: 180,
+            height: 170, // Reducido de 180 a 170
             viewportFraction: 1,
             enlargeCenterPage: false,
             autoPlay: true,
@@ -300,12 +332,11 @@ class _HomeScreenState extends State<HomeScreen> {
           itemBuilder: (context, index, _) {
             final promotion = randomPromotions[index];
             return GestureDetector(
-              onTap:
-                  () => Navigator.pushNamed(
-                    context,
-                    '/product_detail',
-                    arguments: promotion,
-                  ),
+              onTap: () => Navigator.pushNamed(
+                context,
+                '/product_detail',
+                arguments: promotion,
+              ),
               child: Container(
                 width: screenWidth,
                 margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -362,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Text(
                             promotion.name,
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 14, // Reducido de 16 a 14
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF333333),
                             ),
@@ -379,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10), // Reducido de 12 a 10
         ValueListenableBuilder<int>(
           valueListenable: _currentPromotionIndex,
           builder: (context, currentIndex, _) {
@@ -428,6 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Primera columna
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -443,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ...categories
                       .asMap()
                       .entries
-                      .where((e) => e.key.isEven)
+                      .where((e) => e.key % 2 == 0) // Índices pares
                       .map(
                         (entry) => Column(
                           mainAxisSize: MainAxisSize.min,
@@ -457,38 +489,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 20),
+            // Segunda columna
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ...categories.asMap().entries.where((e) => !e.key.isEven).map(
-                    (entry) {
-                      if (entry.key == 3) {
-                        return Column(
+                  _buildFakeCard(
+                    icon: Icons.menu,
+                    text: 'Menú',
+                    height: 80,
+                    routeName: '/menu',
+                    context: context,
+                  ),
+                  const SizedBox(height: 20),
+                  ...categories
+                      .asMap()
+                      .entries
+                      .where((e) => e.key % 2 != 0) // Índices impares
+                      .map(
+                        (entry) => Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _buildFakeCard(
-                              icon: Icons.menu,
-                              text: 'Menú',
-                              height: 80,
-                              routeName: '/menu',
-                              context: context,
-                            ),
-                            const SizedBox(height: 20),
                             _buildCategoryCard(context, entry.value),
                             const SizedBox(height: 20),
                           ],
-                        );
-                      }
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildCategoryCard(context, entry.value),
-                          const SizedBox(height: 20),
-                        ],
-                      );
-                    },
-                  ),
+                        ),
+                      ),
                 ],
               ),
             ),
@@ -517,10 +543,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap:
-            routeName != null
-                ? () => Navigator.pushNamed(context, routeName)
-                : null,
+        onTap: routeName != null
+            ? () => Navigator.pushNamed(context, routeName)
+            : null,
         borderRadius: BorderRadius.circular(15),
         child: Ink(
           decoration: BoxDecoration(

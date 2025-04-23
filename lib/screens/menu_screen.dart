@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:McDonalds/widgets/product_menu_card.dart';
+import 'package:McDonalds/widgets/cart_button.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -33,6 +34,7 @@ class MenuScreen extends StatelessWidget {
               floating: true,
               pinned: true,
               backgroundColor: RocketColors.secondary,
+              actions: const [CartButton(), SizedBox(width: 8)],
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(

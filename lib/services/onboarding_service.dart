@@ -46,7 +46,7 @@ class OnboardingService {
       };
 
       final response = await http.post(
-        Uri.parse('$baseUrl/mcdonalds-survey'),
+        Uri.parse('$baseUrl/api/answers'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(apiData),
       );
@@ -63,7 +63,7 @@ class OnboardingService {
   static Future<Map<String, dynamic>> getSurvey(String id) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/mcdonalds-survey/$id'),
+        Uri.parse('$baseUrl/api/answers/$id'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -84,7 +84,7 @@ class OnboardingService {
   ) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/mcdonalds-survey/$id'),
+        Uri.parse('$baseUrl/api/answers/$id'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(data),
       );

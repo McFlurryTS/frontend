@@ -197,9 +197,9 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _buildAppInfoRow('Versión', '2.5.0'),
-          _buildAppInfoRow('Última actualización', '15 de abril, 2025'),
-          _buildAppInfoRow('Desarrollado por', 'McDonald\'s Corporation'),
+          _buildAppInfoRow('Versión', '1.0'),
+          _buildAppInfoRow('Última actualización', '19 de abril, 2025'),
+          _buildAppInfoRow('Desarrollado por el equipo:', 'McFlurry.ts'),
         ],
       ),
     );

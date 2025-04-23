@@ -23,6 +23,7 @@ class MenuCategory {
       'MCTRIOS_MEDIANOS': const Color(0xFFF1F8E9), // Verde trio
       'MCTRIOS_GRANDES': const Color(0xFFE8EAF6), // Indigo suave
       'MCTRIO_3X3': const Color(0xFFFCE4EC), // Rosa especial
+      'A_LA_CARTA_COMIDA': const Color(0xFFEDE7F6), // Púrpura suave
     };
 
     if (categoryColors.containsKey(id)) {

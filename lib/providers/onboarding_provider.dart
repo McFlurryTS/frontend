@@ -8,22 +8,27 @@ class OnboardingProvider with ChangeNotifier {
   bool _isCompleted = false;
   int _currentStep = 0;
   bool _showThankYou = false;
+  bool _isInitialized = false;
 
-  // Mapa para almacenar las opciones seleccionadas por paso
   final Map<int, List<String>> _selectedOptions = {};
 
   bool get isCompleted => _isCompleted;
+  bool get isInitialized => _isInitialized;
   OnboardingForm? get form => _form;
   int get currentStep => _currentStep;
   bool get showThankYou => _showThankYou;
 
   OnboardingProvider() {
+    debugPrint('Inicializando OnboardingProvider...');
     _loadSavedForm();
   }
 
   Future<void> _loadSavedForm() async {
+    debugPrint('Cargando formulario guardado...');
     _form = StorageService.getOnboardingForm();
     _isCompleted = _form != null;
+    _isInitialized = true;
+    debugPrint('Formulario cargado - isCompleted: $_isCompleted');
     notifyListeners();
   }
 
