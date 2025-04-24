@@ -3,6 +3,7 @@ import 'package:McDonalds/providers/categories_provider.dart';
 import 'package:McDonalds/providers/survey_provider.dart';
 import 'package:McDonalds/providers/user_provider.dart';
 import 'package:McDonalds/screens/category_screen.dart';
+import 'package:McDonalds/screens/coupons_screen.dart';
 import 'package:McDonalds/screens/menu_screen.dart';
 import 'package:McDonalds/screens/orders_history_screen.dart';
 import 'package:McDonalds/screens/product_detail_screen.dart';
@@ -16,7 +17,6 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:McDonalds/providers/products_provider.dart';
 import 'package:McDonalds/screens/home_screen.dart';
 import 'package:McDonalds/screens/game_screen.dart';
-import 'package:McDonalds/screens/demo_screen.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
 import 'package:McDonalds/providers/cart_provider.dart';
 import 'package:McDonalds/services/storage_service.dart';
@@ -208,17 +208,16 @@ class MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
       Provider.of<SurveyProvider>(context, listen: false).init();
       // No es necesario llamar a init() ya que OnboardingProvider se inicializa en su constructor
     });
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabChange);
     _screens = [
       const HomeScreen(),
-      const Center(child: Text('Formulario IA')),
       GameScreen(
         tabController: _tabController,
         currentIndexNotifier: _currentIndexNotifier,
       ),
       const ProfileScreen(),
-      const DemoScreen(),
+      const CouponsScreen(),
     ];
     _simulateInitialLoad();
   }
@@ -276,7 +275,7 @@ class MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 4,
       child: Stack(
         children: [
           Scaffold(
@@ -294,10 +293,9 @@ class MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
                   index: currentIndex,
                   items: <Widget>[
                     _buildNavIcon(currentIndex, 0, Icons.home),
-                    _buildNavIcon(currentIndex, 1, Icons.auto_fix_high),
                     _buildNavIcon(currentIndex, 2, Icons.gamepad),
                     _buildNavIcon(currentIndex, 3, Icons.person),
-                    _buildNavIcon(currentIndex, 4, Icons.developer_mode),
+                    _buildNavIcon(currentIndex, 4, Icons.card_giftcard),
                   ],
                   onTap: (index) {
                     _tabController.index = index;

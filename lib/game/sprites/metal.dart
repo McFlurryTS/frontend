@@ -5,8 +5,8 @@ import 'dart:math';
 import 'item.dart';
 
 class Metal extends Item {
-  Metal({required Vector2 position})
-    : super(position: position, size: Vector2(20, 32));
+  Metal({required super.position})
+    : super(size: Vector2(20, 32));
 
   @override
   Future<void> onLoad() async {

@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:McDonalds/game/sprites/organic.dart';
-import 'package:McDonalds/game/sprites/plastic.dart';
 import 'package:McDonalds/game/sprites/metal.dart';
 import 'package:McDonalds/game/background/background.dart';
 import 'package:McDonalds/game/sprites/trash_bins/glass_bin.dart';
 import 'package:McDonalds/game/sprites/trash_bins/metal_bin.dart';
 import 'package:McDonalds/game/sprites/trash_bins/organic_bin.dart';
 import 'package:McDonalds/game/sprites/trash_bins/plastic_bin.dart';
-import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 
 class GameWorld extends World {
