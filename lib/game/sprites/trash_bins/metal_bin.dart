@@ -12,7 +12,6 @@ class MetalBin extends RecycleBin {
       );
 
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
-    print('collision with ' + other.toString());
     if (other is Metal) {
       other.removeFromParent();
       (gameRef as BurgerGame).increaseScore();

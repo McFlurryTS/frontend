@@ -21,7 +21,6 @@ class OrganicBin extends RecycleBin {
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
-    print('collision with ' + other.toString());
     if (other is Organic) {
       // Handle collision with Organic item
       other.removeFromParent(); // Destroy the Organic item

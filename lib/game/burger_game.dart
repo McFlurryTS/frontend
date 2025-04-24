@@ -7,11 +7,14 @@ import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:McDonalds/game/ui/score_text.dart';
+import 'package:McDonalds/game/ui/health_bar.dart';
+import 'package:McDonalds/game/ui/icon_overlay.dart';
 
 class BurgerGame extends FlameGame with HasCollisionDetection {
   late GameWorld gameWorld;
   late Player player;
   int score = 0;
+  int health = 3;
 
   @override
   Future<void> onLoad() async {
@@ -44,6 +47,7 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
       ),
       margin: const EdgeInsets.only(left: 20, bottom: 20),
     );
+    joystick.add(IconOverlay(asset: 'game_hud/dpad.png'));
     camera.viewport.add(joystick);
 
     final button = HudButtonComponent(
@@ -56,12 +60,13 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
         player.interactWithClosestItem();
       },
     );
+    button.add(IconOverlay(asset: 'game_hud/hand.png'));
     camera.viewport.add(button);
 
     player.joystick = joystick;
 
-    final scoreText = ScoreText();
-    camera.viewport.add(scoreText);
+    camera.viewport.add(ScoreText());
+    camera.viewport.add(HealthBar());
   }
 
   void increaseScore() {

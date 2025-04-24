@@ -10,8 +10,8 @@ class ScoreText extends TextComponent with HasGameRef {
   Future<void> onLoad() async {
     super.onLoad();
     position = Vector2(
-      20,
-      20,
+      170,
+      25,
     ); // Position the score text on the top-left corner
     text = 'Puntuación: 0';
     textRenderer = TextPaint(
