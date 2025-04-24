@@ -1,3 +1,4 @@
+import 'package:McDonalds/screens/confirm_purchase_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -282,14 +283,17 @@ class CartScreen extends StatelessWidget {
                               onPressed: () async {
                                 if (await _confirmPurchase(context)) {
                                   // TODO: Implementar lógica de checkout
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        '¡Pedido confirmado! Procesando...',
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ConfirmPurchaseScreen(
+                                        orderId: '${(10000 + (99999 - 10000) * (new DateTime.now().millisecondsSinceEpoch % 10000) / 10000).toInt()}',
+                                        productName: 'Producto Ejemplo',
+                                        totalAmount: 100.00,
                                       ),
-                                      duration: Duration(seconds: 2),
                                     ),
                                   );
+                                 
                                 }
                               },
                               style: ElevatedButton.styleFrom(

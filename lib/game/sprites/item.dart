@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/game.dart';
@@ -14,14 +15,14 @@ class Item extends SpriteComponent
   @override
   FutureOr<void> onLoad() async {
     super.onLoad();
-    add(RectangleHitbox(size: size)); // Add collision detection
+    add(RectangleHitbox(size: size));
   }
 
   @override
   void update(double dt) {
     super.update(dt);
     if (isCarried && carrier != null) {
-      position = carrier!.position + Vector2(0, 20); // Follow the carrier
+      position = carrier!.position + Vector2(-10, 20); // Follow the carrier
     }
   }
 
