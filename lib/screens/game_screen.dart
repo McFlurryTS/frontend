@@ -35,7 +35,7 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           Center(
             child: GameWidget(
-              game: BurgerGame(), // Embed the FlameGame here
+              game: BurgerGame(context: context), // Embed the FlameGame here
             ),
           ),
           ValueListenableBuilder<bool>(

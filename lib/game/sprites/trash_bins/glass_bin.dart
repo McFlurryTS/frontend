@@ -5,10 +5,6 @@ import 'package:McDonalds/game/sprites/trash_bins/recycle_bin.dart';
 import 'package:flame/components.dart';
 
 class GlassBin extends RecycleBin {
-<<<<<<< HEAD
-  GlassBin({required super.position})
-    : super(size: Vector2(40, 49), spritePath: 'trash_bins/glass_bin.png');
-=======
   GlassBin({required Vector2 position})
     : super(
         position: position,
@@ -21,11 +17,9 @@ class GlassBin extends RecycleBin {
     if (other is Glass) {
       other.removeFromParent();
       (gameRef as BurgerGame).increaseScore();
-    }
-    else if (other is Item) {
+    } else if (other is Item) {
       other.removeFromParent();
       (gameRef as BurgerGame).decreaseHealth();
     }
   }
->>>>>>> 687194d6fdd625c0a2c26e77dd4b34ceb4f2c11f
 }

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:McDonalds/game/ui/score_text.dart';
 import 'package:McDonalds/game/ui/health_bar.dart';
 import 'package:McDonalds/game/ui/icon_overlay.dart';
+import 'package:flame/events.dart';
 
 class BurgerGame extends FlameGame with HasCollisionDetection {
   static final ValueNotifier<bool> showResetButtonNotifier = ValueNotifier(
@@ -16,24 +17,22 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
   );
   static BurgerGame? instance;
 
-  BurgerGame() {
+  // Callback para verificar la iteración
+  final Future<void> Function(BuildContext)? onIterationCheck;
+  // Contexto para el callback
+  final BuildContext context;
+
+  BurgerGame({required this.context, this.onIterationCheck}) {
     instance = this;
   }
 
   late World gameWorld;
   late Player player;
-<<<<<<< HEAD
-  final Function(BuildContext)? onIterationCheck;
-  final BuildContext context;
-
-  BurgerGame({required this.context, this.onIterationCheck});
-=======
   int score = 0;
   int health = 3;
   late HealthBar healthBar;
   late ButtonComponent? resetButton;
   Vector2 playerPosition = Vector2(512, 512);
->>>>>>> 687194d6fdd625c0a2c26e77dd4b34ceb4f2c11f
 
   @override
   Future<void> onLoad() async {

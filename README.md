@@ -1,129 +1,161 @@
-# Rocket UI
-
-## Nombre del Proyecto
-
-El proyecto se llama oficialmente **Rocket**.
+# McDonald's App - Rocket UI
 
 ## Descripción del Proyecto
 
-RocketUI es una aplicación inspirada en la app de McDonald's, diseñada para mejorar la experiencia del usuario mediante la implementación de estrategias de marketing innovadoras. Las principales características incluyen:
+RocketUI es una aplicación moderna desarrollada para McDonald's, diseñada para mejorar la experiencia del usuario mediante la implementación de estrategias de marketing innovadoras y funcionalidades interactivas.
 
-- **Juegos interactivos**: Los usuarios pueden participar en juegos para ganar recompensas y descuentos.
-- **Recomendaciones personalizadas**: El menú se adapta a las preferencias del usuario basándose en su historial de pedidos.
-- **Notificaciones inteligentes**: Se envían notificaciones personalizadas para promociones, recordatorios y ofertas especiales.
-- **Formulario con IA**: Un formulario inteligente que utiliza inteligencia artificial para recopilar y analizar datos del usuario, optimizando las estrategias de marketing.
+## Características Principales
+
+- **Sistema de Pedidos Inteligente**
+
+  - Interfaz intuitiva para navegar por el menú
+  - Carrito de compras con persistencia local
+  - Cajita Feliz personalizable con diferentes tamaños
+  - Sistema de recomendaciones basado en pedidos anteriores
+
+- **Experiencia Gamificada**
+
+  - Minijuegos interactivos usando Flame Engine
+  - Sistema de recompensas y descuentos
+  - Logros desbloqueables
+  - Animaciones fluidas y atractivas
+
+- **Localización y Mapas**
+
+  - Búsqueda de restaurantes cercanos
+  - Navegación integrada
+  - Seguimiento de pedidos en tiempo real
+  - Información detallada de sucursales
+
+- **Sistema de Notificaciones**
+  - Alertas de ofertas personalizadas
+  - Recordatorios de pedidos favoritos
+  - Notificaciones push con Firebase
+  - Actualizaciones de estado de pedidos
+
+## Tecnologías Utilizadas
+
+### Frontend
+
+- Flutter 3.7.2+
+- Provider para gestión de estado
+- Google Maps para geolocalización
+- Firebase para notificaciones y análisis
+- Hive para almacenamiento local
+- Flame para juegos interactivos
+
+### Dependencias Principales
+
+- `provider: ^6.1.4` - Gestión de estado
+- `firebase_core: ^3.13.0` - Integración con Firebase
+- `firebase_messaging: ^15.2.5` - Notificaciones push
+- `flutter_local_notifications: ^19.1.0` - Notificaciones locales
+- `google_fonts: ^6.2.1` - Tipografía personalizada
+- `hive: ^2.2.3` - Base de datos local
+- `geolocator: ^10.1.0` - Servicios de ubicación
+- `flame: ^1.27.0` - Motor de juegos 2D
+- `cached_network_image: ^3.3.1` - Caché de imágenes
+- `shared_preferences: ^2.5.3` - Almacenamiento de preferencias
 
 ## Estructura del Proyecto
 
 ### Assets
 
-Contiene materiales y elementos utilizados en el proyecto, organizados en subcarpetas:
-
-- `assets/images`: Imágenes utilizadas en la aplicación.
-- `assets/fonts`: Fuentes utilizadas en la aplicación.
-- `assets/sounds`: Archivos de audio utilizados en la aplicación.
-- `assets/files`: Otros archivos utilizados en la aplicación.
+- `assets/images/` - Recursos gráficos principales
+- `assets/icons/` - Iconografía de la aplicación
+- `assets/sounds/` - Efectos de sonido y música
+- `assets/fonts/` - Fuentes tipográficas
 
 ### Lib
 
-La carpeta principal que contiene la lógica de la aplicación y los componentes de la interfaz de usuario:
+- `lib/screens/` - Interfaces de usuario
+- `lib/models/` - Modelos de datos
+- `lib/providers/` - Gestores de estado
+- `lib/services/` - Servicios y APIs
+- `lib/widgets/` - Componentes reutilizables
+- `lib/utils/` - Utilidades y helpers
+- `lib/game/` - Lógica de juegos
+- `lib/adapters/` - Adaptadores de datos
 
-- `lib/screens`: Pantallas de la aplicación configuradas en las rutas de navegación.
-- `lib/data` o `lib/models`: Clases para la gestión de datos, como modelos de usuario o pedidos.
-- `lib/utils`: Clases de utilidades, como cálculos de fechas, conversión de datos y constantes comunes.
-- `lib/widgets`: Widgets reutilizables para la interfaz de usuario, como botones personalizados o tarjetas.
-- `lib/services`: Clases que gestionan la comunicación con servicios externos, como Firestore o API HTTP.
-- `lib/main.dart`: El punto de entrada de la aplicación (contiene la función `main`).
+## Configuración del Proyecto
 
-### Configuración
+### Requisitos Previos
 
-Para configurar el proyecto, sigue estos pasos:
+- Flutter SDK ^3.7.2
+- Dart SDK ^3.0.0
+- Android Studio / VS Code
+- Git
 
-1. Clona el repositorio:
+### Pasos de Instalación
+
+1. Clonar el repositorio:
 
    ```bash
-   git clone https://github.com/your-username/rocket-ui.git
+   git clone https://github.com/McFlurryTS/frontend.git
    ```
 
-2. Navega al directorio del proyecto:
-
-   ```bash
-   cd rocket-ui
-   ```
-
-3. Instala las dependencias:
+2. Instalar dependencias:
 
    ```bash
    flutter pub get
    ```
 
-4. Ejecuta la aplicación:
+3. Configurar variables de entorno:
 
+   - Crear archivo `.env` en la raíz del proyecto
+   - Añadir las claves necesarias según `.env.example`
+
+4. Ejecutar la aplicación:
    ```bash
    flutter run
    ```
 
-5. Para compilar la aplicación para producción:
-   ```bash
-   flutter build apk
-   ```
+### Configuración de Firebase
 
-### Funcionalidades Clave
+1. Crear proyecto en Firebase Console
+2. Descargar `google-services.json`
+3. Colocar en `android/app/`
+4. Habilitar servicios necesarios:
+   - Cloud Messaging
+   - Analytics
+   - Cloud Firestore
 
-1. **Juegos Interactivos**:
+## Control de Versiones
 
-   - Implementados en `lib/screens/games`.
-   - Incluyen mecánicas para recompensas y descuentos.
+### Ramas Principales
 
-2. **Recomendaciones Personalizadas**:
+- `main` - Producción
+- `dev` - Desarrollo e integración
+- `feature/*` - Nuevas funcionalidades
+- `hotfix/*` - Correcciones urgentes
 
-   - Gestionadas en `lib/services/recommendation_service.dart`.
-   - Basadas en el historial de pedidos almacenado en Firestore.
+### Flujo de Trabajo
 
-3. **Notificaciones Inteligentes**:
-
-   - Configuradas en `lib/services/notification_service.dart`.
-   - Utilizan Firebase Cloud Messaging para enviar notificaciones personalizadas.
-
-4. **Formulario con IA**:
-   - Implementado en `lib/screens/form`.
-   - Utiliza algoritmos de inteligencia artificial para analizar las respuestas de los usuarios y generar insights que mejoren las campañas de marketing.
-
-## Ramas
-
-| Rama             | Propósito                           |
-| ---------------- | ----------------------------------- |
-| `main`           | Producción                          |
-| `dev`            | Integración y pruebas               |
-| `feature/*`      | Nuevas funcionalidades              |
-| `bugfix/*`       | Corrección de errores               |
-| `hotfix/*`       | Correcciones urgentes en `main`     |
-| `experimental/*` | Prototipos o pruebas experimentales |
+1. Crear rama desde `dev`
+2. Desarrollar funcionalidad
+3. Crear Pull Request
+4. Code Review
+5. Merge a `dev`
+6. Deploy a staging
+7. Merge a `main`
 
 ## Contribución
 
-Si deseas contribuir al proyecto, sigue estos pasos:
-
-1. Crea una rama basada en `dev`:
-
+1. Fork del repositorio
+2. Crear rama de feature:
    ```bash
-   git checkout -b feature/nueva-funcionalidad dev
+   git checkout -b feature/nueva-funcionalidad
    ```
-
-2. Realiza tus cambios y haz un commit:
-
+3. Commits significativos:
    ```bash
-   git commit -m "Descripción de los cambios"
+   git commit -m "feat: añade nueva funcionalidad"
    ```
-
-3. Sube tu rama al repositorio remoto:
-
+4. Push a tu fork:
    ```bash
    git push origin feature/nueva-funcionalidad
    ```
-
-4. Abre un Pull Request hacia la rama `dev`.
+5. Crear Pull Request
 
 ## Licencia
 
-RocketUI está bajo la licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+Este proyecto es privado y propietario. Todos los derechos reservados.

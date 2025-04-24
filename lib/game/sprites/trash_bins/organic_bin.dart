@@ -7,10 +7,6 @@ import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 
 class OrganicBin extends RecycleBin {
-<<<<<<< HEAD
-  OrganicBin({required super.position})
-    : super(size: Vector2(40, 49), spritePath: 'trash_bins/organic_bin.png');
-=======
   OrganicBin({required Vector2 position})
     : super(
         position: position,
@@ -28,5 +24,4 @@ class OrganicBin extends RecycleBin {
       (gameRef as BurgerGame).decreaseHealth();
     }
   }
->>>>>>> 687194d6fdd625c0a2c26e77dd4b34ceb4f2c11f
 }
