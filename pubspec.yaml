@@ -98,6 +98,7 @@ flutter:
     - assets/icons/icon/
     - assets/icons/logo/
     - assets/images/trash_bins/
+    - assets/images/trash_sprites/
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see

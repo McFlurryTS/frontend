@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:McDonalds/game/sprites/burger.dart';
-import 'package:McDonalds/game/sprites/fries.dart';
-import 'package:McDonalds/game/sprites/soda.dart';
+import 'package:McDonalds/game/sprites/organic.dart';
+import 'package:McDonalds/game/sprites/plastic.dart';
+import 'package:McDonalds/game/sprites/metal.dart';
 import 'package:McDonalds/game/background/background.dart';
 import 'package:McDonalds/game/sprites/trash_bins/glass_bin.dart';
 import 'package:McDonalds/game/sprites/trash_bins/metal_bin.dart';
@@ -19,39 +19,27 @@ class GameWorld extends World {
     add(Background());
 
     add(MetalBin(position: Vector2(615, 300)));
-    add(PlasticBin(position: Vector2(1230, 300)));
-    add(GlassBin(position: Vector2(1845, 300)));
-    add(OrganicBin(position: Vector2(2460, 300)));
-
-    spawnItems();
-  }
-
-  void spawnItems() {
+    add(PlasticBin(position: Vector2(735, 300)));
+    add(GlassBin(position: Vector2(855, 300)));
+    add(OrganicBin(position: Vector2(975, 300)));
     final random = Random();
-
-    add(
-      Burger(
-        position: Vector2(
-          random.nextDouble() * 3072,
-          random.nextDouble() * 1408,
+    for (int i = 0; i < 10; i++) {
+      add(
+        Organic(
+          position: Vector2(
+            random.nextDouble() * 372,
+            random.nextDouble() * 148,
+          ),
         ),
-      ),
-    );
-    add(
-      Soda(
-        position: Vector2(
-          random.nextDouble() * 3072,
-          random.nextDouble() * 1408,
+      );
+      add(
+        Metal(
+          position: Vector2(
+            random.nextDouble() * 372,
+            random.nextDouble() * 148,
+          ),
         ),
-      ),
-    );
-    add(
-      Fries(
-        position: Vector2(
-          random.nextDouble() * 3072,
-          random.nextDouble() * 1408,
-        ),
-      ),
-    );
+      );
+    }
   }
 }

@@ -6,14 +6,15 @@ import 'package:McDonalds/game/world/game_world.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:McDonalds/game/ui/score_text.dart';
 
 class BurgerGame extends FlameGame with HasCollisionDetection {
   late GameWorld gameWorld;
   late Player player;
+  int score = 0;
 
   @override
   Future<void> onLoad() async {
-    // Add your game initialization logic here
     super.onLoad();
 
     await Flame.device.setOrientation(DeviceOrientation.portraitUp);
@@ -34,11 +35,11 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
     final joystick = JoystickComponent(
       knob: CircleComponent(
         radius: 15,
-        paint: Paint()..color = const Color(0x77DDDDDD),
+        paint: Paint()..color = const Color(0x77CCCCCC),
       ),
       background: CircleComponent(
         radius: 50,
-        paint: Paint()..color = const Color(0x77CCCCCC),
+        paint: Paint()..color = const Color.fromARGB(119, 188, 183, 183),
         priority: 10,
       ),
       margin: const EdgeInsets.only(left: 20, bottom: 20),
@@ -48,7 +49,7 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
     final button = HudButtonComponent(
       button: CircleComponent(
         radius: 50,
-        paint: Paint()..color = const Color(0x77DDDDDD),
+        paint: Paint()..color = const Color.fromARGB(119, 188, 183, 183),
       ),
       margin: const EdgeInsets.only(right: 20, bottom: 20),
       onPressed: () {
@@ -58,5 +59,12 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
     camera.viewport.add(button);
 
     player.joystick = joystick;
+
+    final scoreText = ScoreText();
+    camera.viewport.add(scoreText);
+  }
+
+  void increaseScore() {
+    score += 1;
   }
 }
