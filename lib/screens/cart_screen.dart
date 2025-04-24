@@ -36,6 +36,7 @@ class CartScreen extends StatelessWidget {
                     'Tu pedido será preparado y enviado a la dirección seleccionada.',
                 confirmText: 'Confirmar',
                 icon: Icons.shopping_bag_outlined,
+                iconColor: Color(0xFFDA291C),
               ),
         ) ??
         false;

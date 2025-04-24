@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:McDonalds/models/product_model.dart';
 import 'package:McDonalds/providers/products_provider.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
@@ -9,20 +10,19 @@ import 'package:McDonalds/widgets/optimized_image.dart';
 import 'package:McDonalds/widgets/cart_button.dart';
 import 'package:McDonalds/models/cart_item_model.dart';
 import 'package:McDonalds/widgets/confirmation_dialog.dart';
-import 'package:McDonalds/widgets/cart_confirmation_dialog.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
   final TabController? tabController;
   final ValueNotifier<int>? currentIndexNotifier;
-  final CartItem? cartItem; // Nuevo parámetro para edición
+  final CartItem? cartItem;
 
   const ProductDetailScreen({
     super.key,
     required this.product,
     this.tabController,
     this.currentIndexNotifier,
-    this.cartItem, // Agregar a constructor
+    this.cartItem,
   });
 
   @override
@@ -37,6 +37,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   final GlobalKey _cartIconKey = GlobalKey();
   final GlobalKey _productImageKey = GlobalKey();
   bool get isEditing => widget.cartItem != null;
+  bool _isLoading = false;
 
   final Map<String, List<String>> recommendedCategoriesMap = {
     'BEBIDAS': ['POSTRES_Y_MALTEADAS', 'FAMILY_BOX'],
@@ -111,6 +112,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     });
   }
 
+  Future<void> _navigateToRelatedProducts() async {
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      final categories =
+          recommendedCategoriesMap[widget.product.category] ?? [];
+      if (categories.isNotEmpty) {
+        Navigator.pushReplacementNamed(
+          context,
+          '/category',
+          arguments: categories.first,
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, '/cart');
+      }
+    }
+  }
+
   void _addToCartWithAnimation() async {
     final RenderBox? productBox =
         _productImageKey.currentContext?.findRenderObject() as RenderBox?;
@@ -157,32 +177,55 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       overlay.remove();
       _animationController.reset();
 
+      // Agregar al carrito
       Provider.of<CartProvider>(
         context,
         listen: false,
       ).addItem(widget.product, quantity, selectedProducts);
 
+      // Mostrar diálogo de confirmación
       if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder:
-              (context) => CartConfirmationDialog(
-                tabController: widget.tabController,
-                currentIndexNotifier: widget.currentIndexNotifier,
-              ),
-        );
+        final shouldContinue = await showConfirmationDialog();
+        if (shouldContinue) {
+          await _navigateToRelatedProducts();
+        } else {
+          // Ir directamente al carrito
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/cart');
+          }
+        }
       }
     }
   }
 
   Future<bool> _confirmSaveChanges(BuildContext context) async {
-    return await showConfirmationDialog(
-      context: context,
-      title: '¿Desea continuar con los cambios?',
-      subtitle: 'Los cambios se aplicarán a tu pedido.',
-      confirmText: 'Continuar',
-      icon: Icons.edit,
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => const ConfirmationDialog(
+                title: '¿Desea continuar con la iteración?',
+                subtitle:
+                    'Puede continuar agregando productos o finalizar su pedido.',
+                confirmText: 'Continuar',
+                cancelText: 'Finalizar',
+                icon: Icons.help_outline,
+                iconColor: Color(0xFFDA291C),
+              ),
+        ) ??
+        false;
+  }
+
+  Future<bool> showConfirmationDialog() async {
+    return showContinueDialog(
+      context,
+      title: '¿Desea continuar con la iteración?',
+      subtitle:
+          '¡Producto agregado al carrito! ¿Le gustaría ver productos relacionados?',
+      confirmText: 'Ver más',
+      cancelText: 'Ir al carrito',
+      barrierDismissible: false,
+      isLoadingAction: true,
     );
   }
 
@@ -436,84 +479,92 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         elevation: 0,
         actions: [CartButton(key: _cartIconKey), const SizedBox(width: 8)],
       ),
-      body: Consumer<ProductsProvider>(
-        builder: (context, provider, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '\$${product.price.toStringAsFixed(0)}',
-                  style: GoogleFonts.roboto(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.9,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: 280,
-                        height: 280,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: RepaintBoundary(
-                            key: _productImageKey,
-                            child: _buildProductImage(product.image),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          product.description,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Center(child: _buildQuantitySelector()),
-                const SizedBox(height: 32),
-                if (!hasAnyRelated)
+      body: Skeletonizer(
+        enabled: _isLoading,
+        containersColor: Colors.grey[300],
+        effect: ShimmerEffect(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+        ),
+        child: Consumer<ProductsProvider>(
+          builder: (context, provider, _) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    "No hay acompañamientos ni productos relacionados.",
-                    style: RocketTextStyles.body.copyWith(color: Colors.grey),
+                    product.name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                for (final cat in categories) buildCircleProductSlider(cat),
-                const SizedBox(height: 16),
-                _buildAllergenSection(product),
-                const SizedBox(height: 16),
-                Text(
-                  "Total: \$${totalPrice.toStringAsFixed(0)}",
-                  style: RocketTextStyles.headline2.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: RocketColors.primary,
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${product.price.toStringAsFixed(0)}',
+                    style: GoogleFonts.roboto(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.9,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: 280,
+                          height: 280,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: RepaintBoundary(
+                              key: _productImageKey,
+                              child: _buildProductImage(product.image),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            product.description,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(child: _buildQuantitySelector()),
+                  const SizedBox(height: 32),
+                  if (!hasAnyRelated)
+                    Text(
+                      "No hay acompañamientos ni productos relacionados.",
+                      style: RocketTextStyles.body.copyWith(color: Colors.grey),
+                    ),
+                  for (final cat in categories) buildCircleProductSlider(cat),
+                  const SizedBox(height: 16),
+                  _buildAllergenSection(product),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Total: \$${totalPrice.toStringAsFixed(0)}",
+                    style: RocketTextStyles.headline2.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: RocketColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
       bottomNavigationBar: Material(
         color: RocketColors.primary,

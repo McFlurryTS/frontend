@@ -3,9 +3,8 @@ import 'package:flame/game.dart';
 import 'package:McDonalds/game/burger_game.dart';
 
 class GameScreen extends StatelessWidget {
-  final TabController tabController; // Recibe el TabController
-  final ValueNotifier<int>
-  currentIndexNotifier; // Recibe el notificador del índice
+  final TabController tabController;
+  final ValueNotifier<int> currentIndexNotifier;
 
   const GameScreen({
     super.key,
@@ -16,11 +15,7 @@ class GameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: GameWidget(
-          game: BurgerGame(), // Embed the FlameGame here
-        ),
-      ),
+      body: Center(child: GameWidget(game: BurgerGame(context: context))),
     );
   }
 }

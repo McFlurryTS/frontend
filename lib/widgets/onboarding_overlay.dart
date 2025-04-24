@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:McDonalds/providers/onboarding_provider.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
-import 'package:McDonalds/widgets/optimized_image.dart';
 import 'package:lottie/lottie.dart';
 
 class OnboardingOverlay extends StatelessWidget {
@@ -20,10 +19,13 @@ class OnboardingOverlay extends StatelessWidget {
               children: [
                 _buildHeader(provider.currentStep),
                 Expanded(
-                  child:
-                      provider.showThankYou
-                          ? _buildThankYouSection(context, provider)
-                          : _buildFormSection(context, provider),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child:
+                        provider.showThankYou
+                            ? _buildThankYouSection(context, provider)
+                            : _buildFormSection(context, provider),
+                  ),
                 ),
                 if (!provider.showThankYou)
                   _buildNavigationButtons(context, provider),
@@ -56,14 +58,23 @@ class OnboardingOverlay extends StatelessWidget {
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: (currentStep + 1) / 8,
-            backgroundColor: Colors.grey[200],
-            valueColor: const AlwaysStoppedAnimation<Color>(
-              RocketColors.primary,
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 300),
+            tween: Tween<double>(
+              begin: (currentStep) / 8,
+              end: (currentStep + 1) / 8,
             ),
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(3),
+            builder: (context, value, _) {
+              return LinearProgressIndicator(
+                value: value,
+                backgroundColor: Colors.grey[200],
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  RocketColors.primary,
+                ),
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(3),
+              );
+            },
           ),
           const SizedBox(height: 8),
           Text(
@@ -239,49 +250,54 @@ class OnboardingOverlay extends StatelessWidget {
   }
 
   Widget _getOptionImage(int step, String option) {
-    String imageUrl =
-        'https://mcdonalds.com.ar/api/images/products/mcdonalds-Big-Mac.png?';
-
-    switch (step) {
-      case 0:
-        switch (option.toLowerCase()) {
-          case 'big mac':
-            imageUrl =
-                'https://mcdonalds.com.ar/api/images/products/mcdonalds-Big-Mac.png?';
-            break;
-          case 'mcnuggets':
-            imageUrl =
-                'https://mcdonalds.com.ar/api/images/products/mcdonalds-McNuggets-6-unidades.png?';
-            break;
-          case 'cuarto de libra':
-            imageUrl =
-                'https://mcdonalds.com.ar/api/images/products/mcdonalds-Cuarto-de-Libra-con-Queso.png?';
-            break;
-        }
-        break;
-      case 1:
-        switch (option.toLowerCase()) {
-          case 'mcflurry':
-            imageUrl =
-                'https://mcdonalds.com.ar/api/images/products/mcdonalds-McFlurry-Oreo.png?';
-            break;
-          case 'sundae':
-            imageUrl =
-                'https://mcdonalds.com.ar/api/images/products/mcdonalds-Sundae-de-Dulce-de-Leche.png?';
-            break;
-        }
-        break;
+    // Definimos la imagen por defecto según el paso basado en la primera opción de cada conjunto
+    String defaultImageForStep(int step) {
+      switch (step) {
+        case 0: // Primer paso: productos principales - burger.png
+          return 'assets/images/burger.png';
+        case 1: // Segundo paso: postres - mcflurry.png
+          return 'assets/images/mcflurry.png';
+        case 2: // Tercer paso: regalos - todas las imágenes disponibles
+          if (option.toLowerCase().contains('hamburguesa')) {
+            return 'assets/images/burger.png';
+          } else if (option.toLowerCase().contains('papas')) {
+            return 'assets/images/fries.png';
+          } else if (option.toLowerCase().contains('soda') ||
+              option.toLowerCase().contains('refresco')) {
+            return 'assets/images/soda.png';
+          } else if (option.toLowerCase().contains('helado') ||
+              option.toLowerCase().contains('postre')) {
+            return 'assets/images/mcflurry.png';
+          }
+          return 'assets/images/burger.png';
+        case 3: // Cuarto paso: para quién compras - burger.png
+          return 'assets/images/burger.png';
+        case 4: // Quinto paso: sabores - fries.png
+          return 'assets/images/fries.png';
+        case 5: // Sexto paso: por qué no vienes - burger.png
+          return 'assets/images/burger.png';
+        case 6: // Séptimo paso: sorpresas - mcflurry.png
+          return 'assets/images/mcflurry.png';
+        case 7: // Octavo paso: acompañamiento
+          if (option.toLowerCase().contains('papas')) {
+            return 'assets/images/fries.png';
+          } else if (option.toLowerCase().contains('refresco')) {
+            return 'assets/images/soda.png';
+          } else if (option.toLowerCase().contains('postre')) {
+            return 'assets/images/mcflurry.png';
+          }
+          return 'assets/images/burger.png';
+        default:
+          return 'assets/images/burger.png';
+      }
     }
 
-    return OptimizedImage(
-      imageUrl: imageUrl,
+    return Image.asset(
+      defaultImageForStep(step),
       fit: BoxFit.contain,
-      placeholder: Container(
-        color: Colors.grey[200],
-        child: Icon(Icons.fastfood, size: 40, color: Colors.grey[400]),
-      ),
-      errorWidget:
-          (_, __) => Icon(Icons.fastfood, size: 40, color: Colors.grey[400]),
+      errorBuilder: (context, error, stackTrace) {
+        return Icon(Icons.fastfood, size: 40, color: Colors.grey[400]);
+      },
     );
   }
 
@@ -289,12 +305,11 @@ class OnboardingOverlay extends StatelessWidget {
     BuildContext context,
     OnboardingProvider provider,
   ) {
-    return SingleChildScrollView(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildThankYouAnimation(),
             const SizedBox(height: 32),
@@ -339,19 +354,38 @@ class OnboardingOverlay extends StatelessWidget {
             ),
             const SizedBox(height: 48),
             ElevatedButton(
-              onPressed: () => provider.completeOnboarding(),
-              style: RocketButtonStyles.primary.copyWith(
-                padding: WidgetStateProperty.all(
-                  const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              onPressed:
+                  !provider.isLoading
+                      ? () => provider.completeOnboarding(context)
+                      : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: RocketColors.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
                 ),
+                disabledBackgroundColor: Colors.grey[300],
               ),
-              child: Text(
-                '¡Iniciar mi experiencia McDonald\'s!',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child:
+                  !provider.isLoading
+                      ? Text(
+                        '¡Iniciar mi experiencia McDonald\'s!',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      )
+                      : const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
             ),
           ],
         ),
@@ -365,22 +399,12 @@ class OnboardingOverlay extends StatelessWidget {
         return Stack(
           alignment: Alignment.center,
           children: [
-            // Animación de celebración
-            Lottie.network(
-              'https://lottie.host/0f0b271b-1827-4580-81c7-776c833fcece/AleeXGR0Fy.json',
+            Lottie.asset(
+              'assets/animations/success.json',
               height: 250,
-              repeat: true,
-              animate: true,
+              repeat: false,
               errorBuilder: (context, error, stackTrace) {
-                // Animación de respaldo si falla la carga de Lottie
                 return _buildFallbackAnimation();
-              },
-              frameBuilder: (context, child, composition) {
-                if (composition == null) {
-                  // Mientras carga, mostrar una animación de carga
-                  return _buildLoadingAnimation();
-                }
-                return child;
               },
             ),
           ],
@@ -412,7 +436,7 @@ class OnboardingOverlay extends StatelessWidget {
                   color: RocketColors.primary.withOpacity(value),
                 ),
                 Transform.rotate(
-                  angle: value * 6.28319, // 2π
+                  angle: value * 6.28319,
                   child: Container(
                     height: 200,
                     width: 200,
@@ -433,30 +457,24 @@ class OnboardingOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingAnimation() {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 1000),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Container(
-          height: 250,
-          width: 250,
-          alignment: Alignment.center,
-          child: CircularProgressIndicator(
-            color: RocketColors.primary,
-            value: value,
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildNavigationButtons(
     BuildContext context,
     OnboardingProvider provider,
   ) {
-    return Padding(
+    final bool canContinue = provider.canContinue();
+
+    return Container(
       padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -472,16 +490,21 @@ class OnboardingOverlay extends StatelessWidget {
               ),
             )
           else
-            const SizedBox.shrink(),
+            const SizedBox(width: 80),
           ElevatedButton(
-            onPressed: () => provider.nextStep(),
+            onPressed: canContinue ? () => provider.nextStep() : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: RocketColors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              disabledBackgroundColor: Colors.grey[300],
             ),
             child: Text(
               'Continuar',
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -520,61 +543,65 @@ class OnboardingOverlay extends StatelessWidget {
           'McNuggets',
           'Cuarto de libra',
           'McPollo',
-          'Ensalada',
-          'Papas grandes',
-          'Otro',
+          'Grand Big Mac',
+          'McFlurry',
         ];
       case 1:
         return [
-          'Pay de manzana',
           'Sundae',
           'McFlurry',
-          'Cono clásico',
-          'Helado doble',
-          'No soy tan dulcero',
-          'Otro',
+          'Pastel',
+          'Cono',
+          'Apple Pie',
+          'Brownies',
         ];
       case 2:
         return [
-          'Una cajita de McNuggets',
-          'Una hamburguesa con queso',
-          'Un helado frío',
-          '¡Sorpresa! Me gusta todo',
+          'Un helado',
+          'Una hamburguesa',
+          'Papas gratis',
+          'Refill de soda',
+          'Juguete',
+          'Postre',
         ];
       case 3:
         return [
-          'Solo para mí',
-          'Para mí y mi pareja',
+          'Para mí',
+          'Para mi familia',
           'Para mis hijos',
-          'Para toda la familia',
-          'A veces varía',
+          'Para mi pareja',
+          'Para compartir',
+          'Para llevar',
         ];
       case 4:
-        return [
-          'Intensos y carnosos',
-          'Suaves y cremosos',
-          'Picantes',
-          'Agridulces',
-          'Me gusta variar',
-        ];
+        return ['Dulces', 'Salados', 'Picantes', 'BBQ', 'Ranch', 'Buffalo'];
       case 5:
         return [
-          'Me gustaría más variedad',
-          'A veces se me pasa',
-          'Me cuido un poco más',
+          'Falta de tiempo',
+          'Precio',
+          'Distancia',
           'Falta de promociones',
-          'Otro',
+          'Prefiero cocinar',
+          'Dieta',
         ];
       case 6:
         return [
-          'Cupones especiales solo para mí',
-          'Menús secretos',
-          'Regalos para mis hijos',
-          'Descuentos cuando hace calor o frío',
-          'Todo lo anterior',
+          'Cupones exclusivos',
+          'Puntos extra',
+          'Regalos sorpresa',
+          'Productos gratis',
+          'Descuentos especiales',
+          'Acceso anticipado',
         ];
       case 7:
-        return ['Papas', 'Ensalada', 'Aros de cebolla', 'Nuggets', 'Ninguno'];
+        return [
+          'Papas',
+          'Ensalada',
+          'Aros de cebolla',
+          'Refresco',
+          'Postre',
+          'Sin acompañamiento',
+        ];
       default:
         return [];
     }

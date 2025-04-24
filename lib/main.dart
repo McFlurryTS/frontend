@@ -8,6 +8,7 @@ import 'package:McDonalds/screens/orders_history_screen.dart';
 import 'package:McDonalds/screens/product_detail_screen.dart';
 import 'package:McDonalds/screens/profile_screen.dart';
 import 'package:McDonalds/screens/search_screen.dart';
+import 'package:McDonalds/screens/happy_meals_screen.dart';
 import 'package:McDonalds/services/image_cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
@@ -34,29 +35,34 @@ import 'package:McDonalds/screens/privacy_screen.dart';
 import 'package:McDonalds/screens/cart_screen.dart';
 import 'package:McDonalds/models/cart_item_model.dart'; // Agregar esta importación
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:McDonalds/screens/location_screen.dart';
+import 'package:McDonalds/screens/login_screen.dart';
 
 Future<void> main() async {
+  // Asegurar que Flutter esté inicializado primero
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar timezone
-  tz.initializeTimeZones();
+  try {
+    // Inicializar Firebase antes que otros servicios
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Inicializar Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    // Inicializar timezone
+    tz.initializeTimeZones();
 
-  // Inicializar servicio de notificaciones
-  await NotificationService.init();
+    // Inicializar Hive para almacenamiento local
+    await Hive.initFlutter();
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(SurveyAdapter());
+    }
 
-  await Hive.initFlutter();
-
-  // Registrar el adapter
-  if (!Hive.isAdapterRegistered(2)) {
-    Hive.registerAdapter(SurveyAdapter());
+    // Inicializar servicios en orden
+    await StorageService.init();
+    await ImageCacheService.init();
+    await NotificationService.init();
+  } catch (e) {
+    debugPrint('Error durante la inicialización: $e');
   }
-
-  await StorageService.init();
-  await ImageCacheService.init();
 
   runApp(const MyMcApp());
 }
@@ -101,85 +107,87 @@ class MyMcApp extends StatelessWidget {
             ),
           ),
         ),
-        home: Consumer<OnboardingProvider>(
-          builder: (context, onboardingProvider, child) {
-            if (!onboardingProvider.isInitialized) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        initialRoute: '/',
+        routes: {
+          '/':
+              (context) => Consumer2<UserProvider, OnboardingProvider>(
+                builder: (context, userProvider, onboardingProvider, child) {
+                  // Esperamos a que ambos providers estén inicializados
+                  if (!userProvider.isInitialized ||
+                      !onboardingProvider.isInitialized) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            final location = StorageService.getLocation();
-            if (!onboardingProvider.isCompleted) {
-              return Stack(
-                children: [const MainApp(), const OnboardingOverlay()],
-              );
-            } else if (location == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LocationScreen()),
-                );
-              });
-              return const Center(child: CircularProgressIndicator());
-            }
+                  // Si no hay onboarding completado, mostrar onboarding
+                  if (!onboardingProvider.isCompleted) {
+                    return const OnboardingOverlay();
+                  }
 
-            return const MainApp();
+                  // Si no hay token guardado, mostrar login
+                  if (!userProvider.isAuthenticated) {
+                    return const LoginScreen();
+                  }
+
+                  // Si tenemos onboarding y token, programar el envío al servidor
+                  if (onboardingProvider.form != null &&
+                      userProvider.token != null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      onboardingProvider.completeOnboarding(context);
+                    });
+                  }
+
+                  // Mostrar la app principal
+                  return const MainApp();
+                },
+              ),
+          '/login': (context) => const LoginScreen(),
+          '/search': (context) => const SearchScreen(),
+          '/menu': (context) => const MenuScreen(),
+          '/happy_meals': (context) => const HappyMealsScreen(),
+          '/category': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is! String) return const SizedBox.shrink();
+            return CategoryScreen(categoryId: args);
           },
-        ),
+          '/privacy': (context) => const PrivacyScreen(),
+          '/help': (context) => const HelpScreen(),
+          '/about': (context) => const AboutScreen(),
+          '/cart': (context) => const CartScreen(),
+          '/orders': (context) => const OrdersHistoryScreen(),
+        },
         onGenerateRoute: (RouteSettings settings) {
-          switch (settings.name) {
-            case '/search':
-              return MaterialPageRoute(builder: (_) => const SearchScreen());
-            case '/menu':
-              return MaterialPageRoute(builder: (_) => const MenuScreen());
-            case '/category':
-              final categoryId = settings.arguments as String;
+          if (settings.name == '/product_detail') {
+            if (settings.arguments is Map) {
+              final args = settings.arguments as Map<String, dynamic>;
               return MaterialPageRoute(
-                builder: (_) => CategoryScreen(categoryId: categoryId),
+                builder: (context) {
+                  final mainAppState =
+                      context.findAncestorStateOfType<MainAppState>();
+                  return ProductDetailScreen(
+                    product: args['product'] as Product,
+                    cartItem: args['cartItem'] as CartItem?,
+                    tabController: mainAppState?.tabController,
+                    currentIndexNotifier: mainAppState?.currentIndexNotifier,
+                  );
+                },
               );
-            case '/product_detail':
-              final mainAppState =
-                  context.findAncestorStateOfType<MainAppState>();
+            }
 
-              // Si los argumentos vienen como un Map, es una edición desde el carrito
-              if (settings.arguments is Map) {
-                final args = settings.arguments as Map<String, dynamic>;
-                return MaterialPageRoute(
-                  builder:
-                      (_) => ProductDetailScreen(
-                        product: args['product'] as Product,
-                        cartItem: args['cartItem'] as CartItem,
-                        tabController: mainAppState?.tabController,
-                        currentIndexNotifier:
-                            mainAppState?.currentIndexNotifier,
-                      ),
-                );
-              }
-
-              // Si no, es una navegación normal desde el menú o búsqueda
-              final product = settings.arguments as Product;
+            if (settings.arguments is Product) {
               return MaterialPageRoute(
-                builder:
-                    (_) => ProductDetailScreen(
-                      product: product,
-                      tabController: mainAppState?.tabController,
-                      currentIndexNotifier: mainAppState?.currentIndexNotifier,
-                    ),
+                builder: (context) {
+                  final mainAppState =
+                      context.findAncestorStateOfType<MainAppState>();
+                  return ProductDetailScreen(
+                    product: settings.arguments as Product,
+                    tabController: mainAppState?.tabController,
+                    currentIndexNotifier: mainAppState?.currentIndexNotifier,
+                  );
+                },
               );
-            case '/privacy':
-              return MaterialPageRoute(builder: (_) => const PrivacyScreen());
-            case '/help':
-              return MaterialPageRoute(builder: (_) => const HelpScreen());
-            case '/about':
-              return MaterialPageRoute(builder: (_) => const AboutScreen());
-            case '/cart':
-              return MaterialPageRoute(builder: (_) => const CartScreen());
-            case '/orders':
-              return MaterialPageRoute(
-                builder: (_) => const OrdersHistoryScreen(),
-              );
-            default:
-              return null;
+            }
           }
+          return null;
         },
       ),
     );

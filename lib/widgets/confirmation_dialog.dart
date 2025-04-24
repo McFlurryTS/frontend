@@ -1,25 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:McDonalds/utils/rocket_theme.dart';
 
-class ConfirmationDialog extends StatelessWidget {
+class ConfirmationDialog extends StatefulWidget {
   final String title;
   final String? subtitle;
-  final String cancelText;
   final String confirmText;
-  final IconData? icon;
-  final Color? iconColor;
-  final VoidCallback? onConfirm;
+  final String cancelText;
+  final IconData icon;
+  final Color iconColor;
+  final bool isLoadingAction;
 
   const ConfirmationDialog({
     super.key,
     required this.title,
     this.subtitle,
+    required this.confirmText,
     this.cancelText = 'Cancelar',
-    this.confirmText = 'Aceptar',
-    this.icon,
-    this.iconColor,
-    this.onConfirm,
+    required this.icon,
+    required this.iconColor,
+    this.isLoadingAction = false,
   });
+
+  @override
+  State<ConfirmationDialog> createState() => _ConfirmationDialogState();
+}
+
+class _ConfirmationDialogState extends State<ConfirmationDialog> {
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -30,75 +37,82 @@ class ConfirmationDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
-              Icon(icon!, size: 48, color: iconColor ?? RocketColors.primary),
-              const SizedBox(height: 16),
-            ],
+            Icon(widget.icon, color: widget.iconColor, size: 48),
+            const SizedBox(height: 16),
             Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
-              ),
+              widget.title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            if (subtitle != null) ...[
+            if (widget.subtitle != null) ...[
               const SizedBox(height: 8),
               Text(
-                subtitle!,
+                widget.subtitle!,
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
             ],
             const SizedBox(height: 24),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: Colors.grey[400]!),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      cancelText,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                TextButton(
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(false),
+                  child: Text(
+                    widget.cancelText,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (onConfirm != null) {
-                        onConfirm!();
-                      }
-                      Navigator.of(context).pop(true);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: RocketColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                ElevatedButton(
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () async {
+                            if (widget.isLoadingAction) {
+                              setState(() => _isLoading = true);
+                              await Future.delayed(
+                                const Duration(milliseconds: 300),
+                              );
+                              if (mounted) {
+                                Navigator.of(context).pop(true);
+                              }
+                            } else {
+                              Navigator.of(context).pop(true);
+                            }
+                          },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: RocketColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
                     ),
-                    child: Text(
-                      confirmText,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : Text(
+                            widget.confirmText,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                 ),
               ],
             ),
@@ -109,112 +123,27 @@ class ConfirmationDialog extends StatelessWidget {
   }
 }
 
-Future<bool> showConfirmationDialog({
-  required BuildContext context,
-  required String title,
-  String? subtitle,
-  String cancelText = 'Cancelar',
-  String confirmText = 'Aceptar',
-  IconData? icon,
-  Color? iconColor,
-  VoidCallback? onConfirm,
-}) async {
-  return await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => ConfirmationDialog(
-              title: title,
-              subtitle: subtitle,
-              cancelText: cancelText,
-              confirmText: confirmText,
-              icon: icon,
-              iconColor: iconColor,
-              onConfirm: onConfirm,
-            ),
-      ) ??
-      false;
-}
-
 Future<bool> showContinueDialog(
   BuildContext context, {
-  String title = 'Continuar',
-  String message = '¿Desea continuar con la iteración?',
+  String title = '¿Desea continuar?',
+  String? subtitle,
   String confirmText = 'Continuar',
-  String cancelText = 'Cancelar',
-  IconData? icon,
-}) async {
-  return await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 48, color: RocketColors.primary),
-                    const SizedBox(height: 16),
-                  ],
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    message,
-                    style: const TextStyle(fontSize: 16, color: Colors.black87),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Text(
-                          cancelText,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: RocketColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          confirmText,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ) ??
-      false;
+  String cancelText = 'Finalizar',
+  bool barrierDismissible = false,
+  bool isLoadingAction = true,
+}) {
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder:
+        (context) => ConfirmationDialog(
+          title: title,
+          subtitle: subtitle,
+          confirmText: confirmText,
+          cancelText: cancelText,
+          icon: Icons.help_outline,
+          iconColor: RocketColors.primary,
+          isLoadingAction: isLoadingAction,
+        ),
+  ).then((value) => value ?? false);
 }

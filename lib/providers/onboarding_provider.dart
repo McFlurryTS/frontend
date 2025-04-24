@@ -2,71 +2,117 @@ import 'package:flutter/material.dart';
 import '../models/onboarding_form.dart';
 import '../services/storage_service.dart';
 import '../services/onboarding_service.dart';
+import '../services/navigation_service.dart';
+import 'user_provider.dart';
+import 'package:provider/provider.dart';
 
 class OnboardingProvider with ChangeNotifier {
+  final GlobalKey<NavigatorState> rootNavigatorKey =
+      NavigationService.navigatorKey;
   OnboardingForm? _form;
   bool _isCompleted = false;
   int _currentStep = 0;
   bool _showThankYou = false;
   bool _isInitialized = false;
-
-  final Map<int, List<String>> _selectedOptions = {};
+  bool _isLoading = false;
+  String? _error;
+  bool _shouldSubmitToServer = false;
+  final Map<int, String> _selectedOptions = {};
 
   bool get isCompleted => _isCompleted;
   bool get isInitialized => _isInitialized;
+  bool get isLoading => _isLoading;
   OnboardingForm? get form => _form;
   int get currentStep => _currentStep;
   bool get showThankYou => _showThankYou;
+  String? get error => _error;
 
   OnboardingProvider() {
-    debugPrint('Inicializando OnboardingProvider...');
     _loadSavedForm();
   }
 
   Future<void> _loadSavedForm() async {
-    debugPrint('Cargando formulario guardado...');
-    _form = StorageService.getOnboardingForm();
-    _isCompleted = _form != null;
-    _isInitialized = true;
-    debugPrint('Formulario cargado - isCompleted: $_isCompleted');
-    notifyListeners();
+    try {
+      _form = StorageService.getOnboardingForm();
+      _isCompleted = _form != null;
+      if (_form != null) {
+        // Recuperar las opciones seleccionadas del formulario guardado
+        _form!.answers.forEach((key, value) {
+          if (key.startsWith('step_')) {
+            final step = int.tryParse(key.split('_')[1]);
+            if (step != null) {
+              _selectedOptions[step] = value.toString();
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar el formulario: $e');
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
+    }
   }
 
-  Future<void> submitForm(OnboardingForm form) async {
-    _form = form;
-    await StorageService.saveOnboardingForm(form);
-    _isCompleted = true;
-    notifyListeners();
+  Future<bool> submitForm(OnboardingForm form) async {
+    try {
+      _form = form;
+      await StorageService.saveOnboardingForm(form);
+      _isCompleted = true;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error al guardar el formulario: $e');
+      return false;
+    }
   }
 
   Future<void> resetForm() async {
-    await StorageService.clearOnboardingForm();
-    _form = null;
-    _isCompleted = false;
-    _currentStep = 0;
-    _selectedOptions.clear();
-    _showThankYou = false;
-    notifyListeners();
+    try {
+      await StorageService.clearOnboardingForm();
+      _form = null;
+      _isCompleted = false;
+      _currentStep = 0;
+      _selectedOptions.clear();
+      _showThankYou = false;
+      _error = null;
+      _shouldSubmitToServer = false;
+    } catch (e) {
+      debugPrint('Error al resetear el formulario: $e');
+    } finally {
+      notifyListeners();
+    }
   }
 
-  // Método para verificar si una opción está seleccionada en un paso específico
   bool isOptionSelected(int step, String option) {
-    return _selectedOptions[step]?.contains(option) ?? false;
+    return _selectedOptions[step] == option;
   }
 
-  // Método para seleccionar/deseleccionar una opción en un paso específico
+  bool canContinue() {
+    return _selectedOptions[_currentStep]?.isNotEmpty ?? false;
+  }
+
   void toggleOption(int step, String option) {
-    // Reiniciamos la lista para este paso (selección única)
-    _selectedOptions[step] = [option];
+    if (_selectedOptions[step] == option) {
+      _selectedOptions[step] = ''; // Deseleccionar
+    } else {
+      _selectedOptions[step] = option; // Selección única
+    }
     notifyListeners();
   }
 
-  // Métodos para la navegación del onboarding
-  void nextStep() {
-    if (_currentStep < 7) {
+  Future<void> nextStep() async {
+    if (_currentStep < 7 && canContinue()) {
+      final shouldContinue = await showContinueDialog(
+        rootNavigatorKey.currentContext!,
+      );
+      if (!shouldContinue) return;
+
       _currentStep++;
-    } else {
+      _error = null;
+    } else if (_currentStep == 7 && canContinue()) {
       _showThankYou = true;
+      _saveFormLocally();
     }
     notifyListeners();
   }
@@ -75,67 +121,159 @@ class OnboardingProvider with ChangeNotifier {
     if (_currentStep > 0) {
       _currentStep--;
       _showThankYou = false;
+      _error = null;
     }
     notifyListeners();
   }
 
-  // Método para completar el onboarding
-  Future<void> completeOnboarding() async {
-    // Verificar que tenemos todas las respuestas necesarias
-    final Map<String, dynamic> answersMap = {};
-
-    // Iterar sobre cada paso y asignar las respuestas al formato correcto
-    _selectedOptions.forEach((step, options) {
-      if (options.isNotEmpty) {
-        final String option =
-            options[0]; // Tomamos la primera opción ya que es selección única
-        switch (step) {
-          case 0:
-            answersMap['step_$step'] = option; // Producto estrella
-            break;
-          case 1:
-            answersMap['step_$step'] = option; // Postre favorito
-            break;
-          case 2:
-            answersMap['step_$step'] = option; // Regalo preferido
-            break;
-          case 3:
-            answersMap['step_$step'] = option; // Para quién compras
-            break;
-          case 4:
-            answersMap['step_$step'] = option; // Sabores favoritos
-            break;
-          case 5:
-            answersMap['step_$step'] = option; // Por qué no vienes más seguido
-            break;
-          case 6:
-            answersMap['step_$step'] = option; // Tipo de sorpresas
-            break;
-          case 7:
-            answersMap['step_$step'] = option; // Acompañamiento preferido
-            break;
-        }
-      }
-    });
-
-    // Crear un formulario con las respuestas
-    final formData = OnboardingForm(
-      answers: answersMap,
-      completedAt: DateTime.now(),
-    );
-
-    // Guardar localmente
-    await submitForm(formData);
+  Future<void> _saveFormLocally() async {
+    if (!canContinue() || _isLoading) return;
 
     try {
-      // Enviar a la API
-      final result = await OnboardingService.submitForm(formData);
-      debugPrint(
-        'Formulario enviado a la API exitosamente: ${result['status']}',
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final Map<String, dynamic> answersMap = {};
+      _selectedOptions.forEach((step, option) {
+        if (option.isNotEmpty) {
+          answersMap['step_$step'] = option;
+        }
+      });
+
+      final formData = OnboardingForm(
+        answers: answersMap,
+        completedAt: DateTime.now(),
       );
+
+      // Solo guardamos localmente sin intentar enviar
+      final savedLocally = await submitForm(formData);
+      if (!savedLocally) {
+        _error = 'Error al guardar el formulario localmente';
+      }
+      // No establecemos _shouldSubmitToServer aquí
     } catch (e) {
-      debugPrint('Error al enviar formulario a la API: $e');
-      // El formulario se guardó localmente de todos modos
+      _error = 'Error al procesar el formulario: $e';
+      debugPrint('Error al guardar formulario: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void setShouldSubmitToServer(bool value) {
+    _shouldSubmitToServer = value;
+    notifyListeners();
+  }
+
+  Future<bool> submitFormToServer(BuildContext context) async {
+    if (!_shouldSubmitToServer || _form == null || _isLoading) return false;
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final token = userProvider.token;
+
+      if (token != null) {
+        final success = await OnboardingService.submitForm(_form!, token);
+        if (success) {
+          _shouldSubmitToServer =
+              false; // Reseteamos el flag después de enviar exitosamente
+          notifyListeners();
+          return true;
+        }
+        _error =
+            'Error al enviar al servidor, los datos se guardarán localmente';
+        return false;
+      }
+      return false;
+    } catch (e) {
+      _error = 'Error al enviar al servidor: $e';
+      debugPrint('Error al enviar formulario: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Este método se puede llamar al iniciar sesión
+  Future<void> checkAndSubmitSavedForm(BuildContext context) async {
+    if (_form != null) {
+      setShouldSubmitToServer(true);
+      await submitFormToServer(context);
+    }
+  }
+
+  Future<bool> showContinueDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('¿Desea continuar?'),
+            content: const Text('¿Desea continuar?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDA291C),
+                ),
+                child: const Text('Sí', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> completeOnboarding(BuildContext context) async {
+    if (!canContinue() || _isLoading) return;
+
+    try {
+      _isLoading = true;
+      _error = null;
+      //notifyListeners();
+
+      final Map<String, dynamic> answersMap = {};
+      _selectedOptions.forEach((step, option) {
+        if (option.isNotEmpty) {
+          answersMap['step_$step'] = option;
+        }
+      });
+
+      final formData = OnboardingForm(
+        answers: answersMap,
+        completedAt: DateTime.now(),
+      );
+
+      // Guardar localmente
+      final savedLocally = await submitForm(formData);
+      if (!savedLocally) {
+        _error = 'Error al guardar el formulario localmente';
+        return;
+      }
+
+      // Intentar enviar al servidor
+      final success = await submitFormToServer(context);
+      if (!success) {
+        setShouldSubmitToServer(true); // Se intentará enviar más tarde
+      }
+
+      // Marcar como completado incluso si falla el envío al servidor
+      _isCompleted = true;
+    } catch (e) {
+      _error = 'Error al completar el onboarding: $e';
+      debugPrint('Error al completar onboarding: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, productsProvider, categoriesProvider, _) {
         final bool isLoading =
             (productsProvider.isLoading || categoriesProvider.isLoading) &&
-                _isFirstLoad;
+            _isFirstLoad;
 
         if (productsProvider.hasError && !isLoading) {
           return Center(
@@ -139,6 +139,40 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: const Duration(milliseconds: 300),
           child: Scaffold(
             backgroundColor: Colors.grey[100],
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => Navigator.pushNamed(context, '/happy_meals'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDA291C),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: Image.asset(
+                      'assets/happy/happy_meal_chica.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('Error loading happy meal image: $error');
+                        return const Icon(
+                          Icons.fastfood,
+                          color: Colors.white,
+                          size: 30,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
             body: Skeletonizer(
               enabled: isLoading,
               containersColor: Colors.grey[300],
@@ -183,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final top = constraints.biggest.height;
                           final collapsedHeight =
                               MediaQuery.of(context).padding.top +
-                                  kToolbarHeight;
+                              kToolbarHeight;
                           final expandedHeight = 160.0; // Ajustado a 160
                           final fraction = ((top - collapsedHeight) /
                                   (expandedHeight - collapsedHeight))
@@ -242,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             CrossAxisAlignment.start,
                                         children: const [
                                           Text(
-                                            'Bienvenida de vuelta! Fernanda',
+                                            'Bienvenida de vuelta! Mauricio',
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontSize:
@@ -263,20 +297,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                           ),
                                         ],
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 72,
-                                      height: 72,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white24,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                        size: 32,
                                       ),
                                     ),
                                   ],
@@ -332,11 +352,12 @@ class _HomeScreenState extends State<HomeScreen> {
           itemBuilder: (context, index, _) {
             final promotion = randomPromotions[index];
             return GestureDetector(
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/product_detail',
-                arguments: promotion,
-              ),
+              onTap:
+                  () => Navigator.pushNamed(
+                    context,
+                    '/product_detail',
+                    arguments: promotion,
+                  ),
               child: Container(
                 width: screenWidth,
                 margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -543,9 +564,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: routeName != null
-            ? () => Navigator.pushNamed(context, routeName)
-            : null,
+        onTap:
+            routeName != null
+                ? () => Navigator.pushNamed(context, routeName)
+                : null,
         borderRadius: BorderRadius.circular(15),
         child: Ink(
           decoration: BoxDecoration(

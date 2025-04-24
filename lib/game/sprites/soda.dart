@@ -2,8 +2,7 @@ import 'package:flame/components.dart';
 import 'item.dart';
 
 class Soda extends Item {
-  Soda({required Vector2 position})
-    : super(position: position, size: Vector2(52, 96));
+  Soda({required super.position}) : super(size: Vector2(52, 96));
 
   @override
   Future<void> onLoad() async {

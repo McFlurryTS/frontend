@@ -10,6 +10,10 @@ import 'package:flutter/services.dart';
 class BurgerGame extends FlameGame with HasCollisionDetection {
   late GameWorld gameWorld;
   late Player player;
+  final Function(BuildContext)? onIterationCheck;
+  final BuildContext context;
+
+  BurgerGame({required this.context, this.onIterationCheck});
 
   @override
   Future<void> onLoad() async {
@@ -58,5 +62,11 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
     camera.viewport.add(button);
 
     player.joystick = joystick;
+  }
+
+  Future<void> checkIteration() async {
+    if (onIterationCheck != null) {
+      await onIterationCheck!(context);
+    }
   }
 }
