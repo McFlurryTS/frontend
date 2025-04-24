@@ -2,8 +2,7 @@ import 'package:flame/components.dart';
 import 'item.dart';
 
 class Glass extends Item {
-  Glass({required Vector2 position, required Vector2 size})
-    : super(position: position, size: size);
+  Glass({required super.position, required super.size});
 
   @override
   Future<void> onLoad() async {

@@ -7,15 +7,18 @@ import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 
 class OrganicBin extends RecycleBin {
-  OrganicBin({required Vector2 position})
+  OrganicBin({required super.position})
     : super(
-        position: position,
         size: Vector2(40, 49),
         spritePath: 'trash_bins/organic_bin.png',
       );
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+<<<<<<< HEAD
+=======
+    print('collision with $other');
+>>>>>>> ccaa84c68643bde1c4d9e703bb600912ed0dac39
     if (other is Organic) {
       other.removeFromParent();
       (gameRef as BurgerGame).increaseScore();
