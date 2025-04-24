@@ -1,4 +1,5 @@
 import 'package:McDonalds/game/burger_game.dart';
+import 'package:McDonalds/game/sprites/item.dart';
 import 'package:McDonalds/game/sprites/metal.dart';
 import 'package:McDonalds/game/sprites/trash_bins/recycle_bin.dart';
 import 'package:flame/components.dart';
@@ -15,6 +16,10 @@ class MetalBin extends RecycleBin {
     if (other is Metal) {
       other.removeFromParent();
       (gameRef as BurgerGame).increaseScore();
+    }
+    else if (other is Item) {
+      other.removeFromParent();
+      (gameRef as BurgerGame).decreaseHealth();
     }
   }
 }

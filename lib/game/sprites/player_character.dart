@@ -3,11 +3,13 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:McDonalds/game/sprites/item.dart';
 
-class Player extends SpriteComponent
+enum Score { player, steve, trex }
+
+class Player extends SpriteGroupComponent
     with HasGameRef<FlameGame>, CollisionCallbacks {
   JoystickComponent? joystick;
   Item? closestItem;
-  double speed = 3;
+  double speed = 5;
   double detectionRadius = 64;
 
   Player() : super(size: Vector2(30, 54));
@@ -15,9 +17,13 @@ class Player extends SpriteComponent
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    sprite = await gameRef.loadSprite('player.png');
+    sprites = {
+      Score.player: await gameRef.loadSprite('player.png'),
+      Score.steve: await gameRef.loadSprite('steve.png'),
+      Score.trex: await gameRef.loadSprite('trex.png'),
+    };
+    current = Score.player;
     size = Vector2(30, 54);
-    position = gameRef.size / 2 - size / 2;
     add(RectangleHitbox(size: size));
   }
 
@@ -61,6 +67,18 @@ class Player extends SpriteComponent
       item.pickUp(this);
     } else {
       item.drop();
+    }
+  }
+
+  void setSprite(int score) {
+    if (score == 0) {
+      current = Score.player;
+    } else if (score == 3) {
+      current = Score.steve;
+    } else if (score == 6) {
+      current = Score.trex;
+    } else {
+      current = Score.player; // Default to player sprite for invalid scores
     }
   }
 }

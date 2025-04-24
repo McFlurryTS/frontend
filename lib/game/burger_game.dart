@@ -11,10 +11,22 @@ import 'package:McDonalds/game/ui/health_bar.dart';
 import 'package:McDonalds/game/ui/icon_overlay.dart';
 
 class BurgerGame extends FlameGame with HasCollisionDetection {
-  late GameWorld gameWorld;
+  static final ValueNotifier<bool> showResetButtonNotifier = ValueNotifier(
+    false,
+  );
+  static BurgerGame? instance;
+
+  BurgerGame() {
+    instance = this;
+  }
+
+  late World gameWorld;
   late Player player;
   int score = 0;
   int health = 3;
+  late HealthBar healthBar;
+  late ButtonComponent? resetButton;
+  Vector2 playerPosition = Vector2(512, 512);
 
   @override
   Future<void> onLoad() async {
@@ -28,7 +40,7 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
 
     player = Player();
     add(player);
-    player.position = Vector2(256, 256);
+    player.position = playerPosition;
     gameWorld.add(player);
 
     camera = CameraComponent(world: gameWorld)
@@ -60,16 +72,46 @@ class BurgerGame extends FlameGame with HasCollisionDetection {
         player.interactWithClosestItem();
       },
     );
-    button.add(IconOverlay(asset: 'game_hud/hand.png'));
+    button.add(IconOverlay(asset: 'game_hud/grab.png'));
     camera.viewport.add(button);
 
     player.joystick = joystick;
-
+    healthBar = HealthBar();
     camera.viewport.add(ScoreText());
-    camera.viewport.add(HealthBar());
+    camera.viewport.add(healthBar);
+  }
+
+  void decreaseHealth() {
+    if (health > 0) {
+      health -= 1;
+      healthBar.updateHealth(health);
+    }
+    if (health == 0) {
+      player.speed = 0;
+      showResetButtonNotifier.value = true;
+    }
+  }
+
+  void reset() async {
+    score = 0;
+    player.setSprite(0);
+    player.speed = 5;
+    health = 3;
+    healthBar.updateHealth(3);
+    showResetButtonNotifier.value = false;
+    player.position = playerPosition;
   }
 
   void increaseScore() {
     score += 1;
+
+    // Map score to valid values for setSprite
+    if (score >= 6) {
+      player.setSprite(6);
+    } else if (score >= 3) {
+      player.setSprite(3);
+    } else {
+      player.setSprite(0);
+    }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:McDonalds/game/sprites/item.dart';
 import 'package:McDonalds/game/sprites/trash_bins/recycle_bin.dart';
 import 'package:McDonalds/game/sprites/organic.dart';
 import 'package:McDonalds/game/burger_game.dart';
@@ -14,17 +15,13 @@ class OrganicBin extends RecycleBin {
       );
 
   @override
-  Future<void> onLoad() async {
-    super.onLoad();
-    add(RectangleHitbox());
-  }
-
-  @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     if (other is Organic) {
-      // Handle collision with Organic item
-      other.removeFromParent(); // Destroy the Organic item
-      (gameRef as BurgerGame).increaseScore(); // Increase the score in the game
+      other.removeFromParent();
+      (gameRef as BurgerGame).increaseScore();
+    } else if (other is Item) {
+      other.removeFromParent();
+      (gameRef as BurgerGame).decreaseHealth();
     }
   }
 }

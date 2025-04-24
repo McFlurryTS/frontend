@@ -2,23 +2,20 @@ import 'dart:async';
 
 import 'package:flame/components.dart';
 
-enum HeartIconType { heart, heart_empty }
+enum HeartState { full, empty }
 
-class HeartIcon extends SpriteGroupComponent<HeartIconType> with HasGameRef {
-  HeartIcon({required Vector2 position})
-    : super(position: position, size: Vector2(40, 40));
+class HeartIcon extends SpriteGroupComponent<HeartState> with HasGameRef {
+  HeartIcon({required Vector2 position, required HeartState state})
+    : super(position: position, size: Vector2(40, 40), current: state);
 
   @override
-  FutureOr<void> onLoad() async {
+  Future<void> onLoad() async {
     super.onLoad();
 
+    // Ensure sprites are loaded before the component is used
     sprites = {
-      HeartIconType.heart: await gameRef.loadSprite('game_hud/heart.png'),
-      HeartIconType.heart_empty: await gameRef.loadSprite(
-        'game_hud/heart_empty.png',
-      ),
+      HeartState.full: await gameRef.loadSprite('game_hud/heart.png'),
+      HeartState.empty: await gameRef.loadSprite('game_hud/heart_empty.png'),
     };
-
-    current = HeartIconType.heart;
   }
 }
